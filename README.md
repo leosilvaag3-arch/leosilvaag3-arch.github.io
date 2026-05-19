@@ -1,7 +1,6 @@
-<!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-  <title>SITE TESTE</title>
 </head>
 <body bgcolor="#111111" text="white" link="#00ff88" vlink="#00ff88">
 
