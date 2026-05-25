@@ -1,1978 +1,963 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MatrixRogue — Álgebra Linear RPG</title>
+<title>FinMatrix</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #050a0f;
-    --bg2: #0a1520;
-    --bg3: #0f1e30;
-    --panel: #0d1b2a;
-    --border: #1a3a5c;
-    --accent: #00d4ff;
-    --accent2: #00ff88;
-    --accent3: #ff6b35;
-    --accent4: #c678dd;
-    --danger: #ff4444;
-    --gold: #ffd700;
-    --text: #b0d4f0;
-    --text2: #5a8ab0;
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-hud: 'Orbitron', sans-serif;
-    --font-body: 'Rajdhani', sans-serif;
-    --hp-color: #ff4444;
-    --mp-color: #4444ff;
-    --xp-color: #44ff88;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-body);
-    min-height: 100vh;
-    overflow: hidden;
-    font-size: 14px;
-  }
-
-  /* ── CANVAS SCANLINES OVERLAY ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.015) 2px, rgba(0,212,255,0.015) 4px);
-    pointer-events: none;
-    z-index: 1000;
-  }
-
-  /* ── SCREENS ── */
-  .screen { position: fixed; inset: 0; display: none; }
-  .screen.active { display: flex; }
-
-  /* ══════════════════════════════════
-     TITLE SCREEN
-  ══════════════════════════════════ */
-  #title-screen {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(ellipse at center, #0a1e35 0%, #050a0f 70%);
-    gap: 2rem;
-  }
-
-  .title-logo {
-    text-align: center;
-  }
-
-  .title-logo h1 {
-    font-family: var(--font-hud);
-    font-size: clamp(2rem, 5vw, 4rem);
-    font-weight: 800;
-    color: var(--accent);
-    text-shadow: 0 0 30px rgba(0,212,255,0.5), 0 0 60px rgba(0,212,255,0.2);
-    letter-spacing: 0.15em;
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-
-  .title-logo .subtitle {
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    color: var(--text2);
-    letter-spacing: 0.3em;
-    margin-top: 0.5rem;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { text-shadow: 0 0 20px rgba(0,212,255,0.4); }
-    50% { text-shadow: 0 0 40px rgba(0,212,255,0.8), 0 0 80px rgba(0,212,255,0.3); }
-  }
-
-  .matrix-rain-canvas {
-    position: absolute;
-    inset: 0;
-    opacity: 0.07;
-    z-index: 0;
-  }
-
-  .title-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2rem; }
-
-  .title-matrix-preview {
-    font-family: var(--font-mono);
-    font-size: 1.1rem;
-    color: var(--accent2);
-    opacity: 0.7;
-    text-align: center;
-    line-height: 1.8;
-  }
-
-  .btn-primary {
-    background: transparent;
-    border: 1.5px solid var(--accent);
-    color: var(--accent);
-    font-family: var(--font-hud);
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    padding: 0.75rem 2.5rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--accent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .btn-primary:hover { color: var(--bg); }
-  .btn-primary:hover::before { opacity: 1; }
-  .btn-primary span { position: relative; z-index: 1; }
-
-  .how-to-box {
-    background: rgba(0,212,255,0.05);
-    border: 0.5px solid var(--border);
-    padding: 1.25rem 2rem;
-    max-width: 500px;
-    text-align: center;
-    font-family: var(--font-body);
-    font-size: 0.95rem;
-    color: var(--text2);
-    line-height: 1.7;
-  }
-
-  .how-to-box strong { color: var(--accent2); font-weight: 600; }
-
-  /* ══════════════════════════════════
-     GAME SCREEN
-  ══════════════════════════════════ */
-  #game-screen {
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  /* TOP HUD */
-  .hud-top {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.5rem 1rem;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .hud-title {
-    font-family: var(--font-hud);
-    font-size: 0.75rem;
-    color: var(--accent);
-    letter-spacing: 0.15em;
-    white-space: nowrap;
-  }
-
-  .hud-bar-group { display: flex; align-items: center; gap: 0.5rem; }
-  .hud-bar-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text2); width: 2rem; }
-
-  .hud-bar {
-    width: 100px;
-    height: 8px;
-    background: rgba(255,255,255,0.08);
-    border: 0.5px solid rgba(255,255,255,0.1);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .hud-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.3s;
-  }
-
-  .hud-bar-fill.hp { background: var(--hp-color); box-shadow: 0 0 6px rgba(255,68,68,0.5); }
-  .hud-bar-fill.mp { background: var(--mp-color); box-shadow: 0 0 6px rgba(68,68,255,0.5); }
-  .hud-bar-fill.xp { background: var(--xp-color); box-shadow: 0 0 6px rgba(68,255,136,0.5); }
-
-  .hud-bar-val { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text2); min-width: 50px; }
-
-  .hud-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
-
-  .hud-stat { display: flex; flex-direction: column; align-items: center; }
-  .hud-stat-val { font-family: var(--font-hud); font-size: 0.9rem; color: var(--gold); }
-  .hud-stat-lbl { font-family: var(--font-mono); font-size: 0.55rem; color: var(--text2); letter-spacing: 0.1em; }
-
-  .hud-right { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
-
-  /* MAIN LAYOUT */
-  .game-body {
-    display: grid;
-    grid-template-columns: 220px 1fr 280px;
-    grid-template-rows: 1fr 180px;
-    flex: 1;
-    overflow: hidden;
-    gap: 0;
-  }
-
-  /* LEFT PANEL — player info & abilities */
-  .panel-left {
-    grid-row: 1 / 3;
-    background: var(--panel);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    padding: 0.75rem;
-    gap: 0.75rem;
-  }
-
-  .panel-section-title {
-    font-family: var(--font-hud);
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    color: var(--text2);
-    text-transform: uppercase;
-    border-bottom: 0.5px solid var(--border);
-    padding-bottom: 0.3rem;
-  }
-
-  /* AVATAR */
-  .avatar-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .avatar-sprite {
-    width: 64px;
-    height: 64px;
-    border: 1.5px solid var(--accent);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    background: rgba(0,212,255,0.05);
-    box-shadow: 0 0 15px rgba(0,212,255,0.2);
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
-
-  .avatar-name {
-    font-family: var(--font-hud);
-    font-size: 0.75rem;
-    color: var(--accent);
-    text-align: center;
-  }
-
-  .avatar-class {
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    color: var(--text2);
-    text-align: center;
-  }
-
-  /* ABILITY CARDS */
-  .ability-card {
-    background: rgba(0,212,255,0.03);
-    border: 0.5px solid var(--border);
-    padding: 0.5rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    border-radius: 3px;
-  }
-
-  .ability-card:hover {
-    border-color: var(--accent);
-    background: rgba(0,212,255,0.07);
-  }
-
-  .ability-card.selected {
-    border-color: var(--accent2);
-    background: rgba(0,255,136,0.08);
-  }
-
-  .ability-card.disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .ability-header { display: flex; justify-content: space-between; align-items: center; }
-  .ability-name { font-family: var(--font-body); font-weight: 600; font-size: 0.8rem; color: var(--text); }
-  .ability-cost {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: var(--mp-color);
-    background: rgba(68,68,255,0.1);
-    padding: 1px 5px;
-    border-radius: 3px;
-  }
-  .ability-desc { font-family: var(--font-body); font-size: 0.7rem; color: var(--text2); margin-top: 0.2rem; line-height: 1.4; }
-  .ability-dmg { font-family: var(--font-mono); font-size: 0.65rem; color: var(--accent3); margin-top: 0.2rem; }
-
-  /* CENTER — dungeon map */
-  .panel-center {
-    grid-row: 1;
-    overflow: hidden;
-    position: relative;
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #dungeon-canvas {
-    display: block;
-    image-rendering: pixelated;
-  }
-
-  /* BATTLE OVERLAY */
-  .battle-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(5,10,15,0.92);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 1.5rem;
-    z-index: 10;
-  }
-
-  .battle-overlay.active { display: flex; }
-
-  .battle-arena {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 600px;
-    padding: 0 2rem;
-  }
-
-  .combatant {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .combatant-sprite {
-    font-size: 3rem;
-    animation: battle-idle 1s ease-in-out infinite;
-  }
-
-  @keyframes battle-idle {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
-
-  .combatant-sprite.shake {
-    animation: shake 0.4s;
-  }
-
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-8px); }
-    40% { transform: translateX(8px); }
-    60% { transform: translateX(-5px); }
-    80% { transform: translateX(5px); }
-  }
-
-  .combatant-name {
-    font-family: var(--font-hud);
-    font-size: 0.75rem;
-    color: var(--text);
-    letter-spacing: 0.1em;
-  }
-
-  .combatant-hp {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: var(--hp-color);
-  }
-
-  .vs-text {
-    font-family: var(--font-hud);
-    font-size: 1.5rem;
-    color: var(--accent3);
-    font-weight: 800;
-  }
-
-  /* BOTTOM PANEL — combat log */
-  .panel-bottom {
-    grid-column: 2;
-    grid-row: 2;
-    background: var(--panel);
-    border-top: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .log-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.4rem 0.75rem;
-    border-bottom: 0.5px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .log-title { font-family: var(--font-hud); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--text2); }
-
-  #combat-log {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0.5rem 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  #combat-log::-webkit-scrollbar { width: 4px; }
-  #combat-log::-webkit-scrollbar-track { background: transparent; }
-  #combat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .log-entry {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: var(--text2);
-    line-height: 1.5;
-    animation: log-in 0.2s ease;
-  }
-
-  @keyframes log-in {
-    from { opacity: 0; transform: translateX(-5px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-
-  .log-entry.player { color: var(--accent2); }
-  .log-entry.enemy { color: var(--accent3); }
-  .log-entry.system { color: var(--accent4); }
-  .log-entry.error { color: var(--danger); }
-  .log-entry.success { color: var(--gold); }
-
-  /* RIGHT PANEL — challenge */
-  .panel-right {
-    grid-row: 1 / 3;
-    background: var(--panel);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    padding: 0.75rem;
-    gap: 0.75rem;
-  }
-
-  /* MATRIX DISPLAY */
-  .matrix-display {
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    color: var(--accent2);
-    text-align: center;
-    background: rgba(0,255,136,0.03);
-    border: 0.5px solid rgba(0,255,136,0.2);
-    padding: 0.75rem;
-    border-radius: 3px;
-    line-height: 1.9;
-  }
-
-  .matrix-bracket { color: var(--text2); font-size: 1.6rem; vertical-align: middle; }
-
-  /* INPUT AREA */
-  .challenge-inputs {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .input-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .input-label {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--text2);
-    min-width: 60px;
-  }
-
-  .matrix-input {
-    background: rgba(0,212,255,0.05);
-    border: 0.5px solid var(--border);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    padding: 0.3rem 0.5rem;
-    width: 100%;
-    outline: none;
-    transition: border-color 0.15s;
-    border-radius: 2px;
-  }
-
-  .matrix-input:focus { border-color: var(--accent); }
-
-  /* MATRIX GRID INPUT */
-  .matrix-grid {
-    display: grid;
-    gap: 4px;
-    font-family: var(--font-mono);
-  }
-
-  .matrix-cell {
-    background: rgba(0,212,255,0.05);
-    border: 0.5px solid var(--border);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    padding: 0.25rem;
-    text-align: center;
-    outline: none;
-    transition: border-color 0.15s;
-    width: 48px;
-    border-radius: 2px;
-  }
-
-  .matrix-cell:focus { border-color: var(--accent2); background: rgba(0,255,136,0.05); }
-
-  .btn-attack {
-    background: transparent;
-    border: 1.5px solid var(--accent3);
-    color: var(--accent3);
-    font-family: var(--font-hud);
-    font-size: 0.75rem;
-    letter-spacing: 0.15em;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    width: 100%;
-    margin-top: 0.5rem;
-    border-radius: 3px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-attack::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--accent3);
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-
-  .btn-attack:hover { color: var(--bg); }
-  .btn-attack:hover::before { opacity: 1; }
-  .btn-attack span { position: relative; z-index: 1; }
-
-  .btn-attack:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-attack:disabled:hover { color: var(--accent3); }
-  .btn-attack:disabled:hover::before { opacity: 0; }
-
-  .hint-box {
-    background: rgba(198,120,221,0.05);
-    border: 0.5px solid rgba(198,120,221,0.3);
-    padding: 0.6rem 0.75rem;
-    border-radius: 3px;
-  }
-
-  .hint-title { font-family: var(--font-hud); font-size: 0.55rem; letter-spacing: 0.15em; color: var(--accent4); margin-bottom: 0.3rem; }
-  .hint-text { font-family: var(--font-body); font-size: 0.75rem; color: var(--text2); line-height: 1.5; }
-  .hint-formula { font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent4); margin-top: 0.3rem; }
-
-  .enemy-info {
-    background: rgba(255,107,53,0.05);
-    border: 0.5px solid rgba(255,107,53,0.3);
-    padding: 0.6rem;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .enemy-icon { font-size: 2rem; }
-  .enemy-details { flex: 1; }
-  .enemy-name-tag { font-family: var(--font-hud); font-size: 0.8rem; color: var(--accent3); }
-  .enemy-hp-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 0.3rem; overflow: hidden; }
-  .enemy-hp-fill { height: 100%; background: var(--accent3); border-radius: 3px; transition: width 0.4s; }
-
-  /* FEEDBACK */
-  .feedback-banner {
-    padding: 0.4rem 0.75rem;
-    border-radius: 3px;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    text-align: center;
-    animation: banner-in 0.3s ease;
-  }
-
-  @keyframes banner-in {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .feedback-banner.correct { background: rgba(0,255,136,0.1); color: var(--accent2); border: 0.5px solid var(--accent2); }
-  .feedback-banner.wrong { background: rgba(255,68,68,0.1); color: var(--danger); border: 0.5px solid var(--danger); }
-
-  /* ROOM MAP */
-  #dungeon-canvas { cursor: default; }
-
-  /* CHOICE OVERLAY — room type choices */
-  .choice-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(5,10,15,0.95);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    z-index: 10;
-  }
-
-  .choice-overlay.active { display: flex; }
-  .choice-title { font-family: var(--font-hud); font-size: 1rem; color: var(--accent); letter-spacing: 0.2em; }
-  .choice-subtitle { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text2); }
-
-  .choice-cards {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .choice-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 1rem;
-    width: 140px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    border-radius: 4px;
-  }
-
-  .choice-card:hover { border-color: var(--accent); transform: translateY(-3px); }
-  .choice-card .ci { font-size: 2rem; margin-bottom: 0.5rem; }
-  .choice-card .cn { font-family: var(--font-hud); font-size: 0.7rem; color: var(--text); }
-  .choice-card .cd { font-family: var(--font-body); font-size: 0.65rem; color: var(--text2); margin-top: 0.3rem; line-height: 1.4; }
-
-  /* LEVEL UP OVERLAY */
-  .levelup-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5,10,15,0.97);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2rem;
-    z-index: 200;
-  }
-
-  .levelup-overlay.active { display: flex; }
-  .levelup-title { font-family: var(--font-hud); font-size: 2rem; color: var(--gold); text-shadow: 0 0 30px rgba(255,215,0,0.5); letter-spacing: 0.2em; animation: pulse-glow2 1s ease-in-out infinite; }
-
-  @keyframes pulse-glow2 {
-    0%, 100% { text-shadow: 0 0 20px rgba(255,215,0,0.4); }
-    50% { text-shadow: 0 0 40px rgba(255,215,0,0.9), 0 0 80px rgba(255,215,0,0.3); }
-  }
-
-  .perk-cards { display: flex; gap: 1.5rem; }
-
-  .perk-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 1.25rem;
-    width: 180px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    border-radius: 4px;
-  }
-
-  .perk-card:hover { border-color: var(--gold); transform: translateY(-5px); box-shadow: 0 8px 25px rgba(255,215,0,0.1); }
-  .perk-card .pi { font-size: 2.5rem; margin-bottom: 0.75rem; }
-  .perk-card .pn { font-family: var(--font-hud); font-size: 0.8rem; color: var(--gold); }
-  .perk-card .pd { font-family: var(--font-body); font-size: 0.72rem; color: var(--text2); margin-top: 0.4rem; line-height: 1.5; }
-
-  /* GAME OVER */
-  .gameover-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5,10,15,0.97);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    z-index: 300;
-  }
-
-  .gameover-overlay.active { display: flex; }
-  .gameover-title { font-family: var(--font-hud); font-size: 2.5rem; color: var(--danger); letter-spacing: 0.2em; }
-
-  /* FLOATING DAMAGE */
-  .float-dmg {
-    position: absolute;
-    font-family: var(--font-hud);
-    font-size: 1.2rem;
-    font-weight: 800;
-    pointer-events: none;
-    animation: float-up 1.2s ease forwards;
-    z-index: 50;
-  }
-
-  @keyframes float-up {
-    0% { opacity: 1; transform: translateY(0) scale(1); }
-    30% { opacity: 1; transform: translateY(-20px) scale(1.2); }
-    100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
-  }
-
-  /* TOOLTIP */
-  .tooltip {
-    position: absolute;
-    background: var(--panel);
-    border: 0.5px solid var(--accent);
-    padding: 0.4rem 0.6rem;
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    color: var(--text);
-    pointer-events: none;
-    z-index: 500;
-    max-width: 200px;
-    border-radius: 3px;
-    display: none;
-  }
-
-  /* SCROLLBAR */
-  .panel-left::-webkit-scrollbar, .panel-right::-webkit-scrollbar { width: 3px; }
-  .panel-left::-webkit-scrollbar-track, .panel-right::-webkit-scrollbar-track { background: transparent; }
-  .panel-left::-webkit-scrollbar-thumb, .panel-right::-webkit-scrollbar-thumb { background: var(--border); }
-
-  /* RESPONSIVE adjustments */
-  @media (max-width: 900px) {
-    .game-body { grid-template-columns: 180px 1fr 240px; }
-  }
-
-  /* PARTICLE CANVAS */
-  #particle-canvas {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 5;
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --accent:#115000;
+  --accent-l:#1a7800;
+  --accent-ll:#22a000;
+  --accent-glow:rgba(17,80,0,0.35);
+  --radius:12px;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Outfit',sans-serif;
+  --serif:'DM Serif Display',serif;
+  --transition:0.22s ease;
+}
+
+[data-theme="dark"]{
+  --bg:#09100d;
+  --bg2:#0f1a14;
+  --bg3:#162010;
+  --surface:#1a2820;
+  --surface2:#213222;
+  --border:rgba(17,80,0,0.25);
+  --border2:rgba(17,80,0,0.45);
+  --text:#e2ede6;
+  --text2:#8aab93;
+  --text3:#567060;
+  --shadow:rgba(0,0,0,0.5);
+}
+[data-theme="light"]{
+  --bg:#f4f8f5;
+  --bg2:#eaf2ec;
+  --bg3:#ddf0e2;
+  --surface:#ffffff;
+  --surface2:#f0f7f2;
+  --border:rgba(17,80,0,0.15);
+  --border2:rgba(17,80,0,0.35);
+  --text:#0d1f12;
+  --text2:#3a6647;
+  --text3:#7aaa88;
+  --shadow:rgba(17,80,0,0.08);
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  transition:background var(--transition),color var(--transition);
+}
+
+/* ── GRID BG ── */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+  opacity:0.5;
+}
+
+/* ── PAGES ── */
+.page{display:none;position:relative;z-index:1;min-height:100vh}
+.page.active{display:flex;flex-direction:column}
+
+/* ══════════════════════════════════════
+   LOGIN
+══════════════════════════════════════ */
+#page-login{
+  align-items:center;justify-content:center;
+  padding:2rem;
+}
+
+.login-card{
+  width:100%;max-width:420px;
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  padding:3rem 2.5rem;
+  box-shadow:0 24px 80px var(--shadow);
+  position:relative;overflow:hidden;
+}
+.login-card::before{
+  content:'';position:absolute;
+  top:-60px;right:-60px;
+  width:200px;height:200px;
+  background:var(--accent-glow);
+  border-radius:50%;filter:blur(60px);
+  pointer-events:none;
+}
+
+.login-logo{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:2rem;
+}
+.login-logo-icon{
+  width:40px;height:40px;
+  background:var(--accent);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:14px;
+  color:#fff;letter-spacing:-1px;
+}
+.login-logo-name{
+  font-family:var(--serif);font-size:1.6rem;
+  color:var(--text);
+}
+.login-logo-name span{color:var(--accent-ll)}
+
+.login-title{
+  font-size:1.4rem;font-weight:600;
+  margin-bottom:.4rem;color:var(--text);
+}
+.login-sub{font-size:.9rem;color:var(--text2);margin-bottom:2rem}
+
+.field{margin-bottom:1.2rem}
+.field label{
+  display:block;font-size:.8rem;font-weight:500;
+  color:var(--text2);margin-bottom:.4rem;
+  font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;
+}
+.field input{
+  width:100%;padding:.75rem 1rem;
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:var(--radius);
+  color:var(--text);font-size:.95rem;font-family:var(--sans);
+  outline:none;transition:border-color var(--transition),box-shadow var(--transition);
+}
+.field input:focus{
+  border-color:var(--accent-ll);
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+.field input::placeholder{color:var(--text3)}
+
+.btn-primary{
+  width:100%;padding:.8rem;
+  background:var(--accent);
+  color:#fff;
+  border:none;border-radius:var(--radius);
+  font-family:var(--sans);font-weight:600;font-size:1rem;
+  cursor:pointer;transition:background var(--transition),transform .1s;
+  margin-top:.5rem;
+}
+.btn-primary:hover{background:var(--accent-l)}
+.btn-primary:active{transform:scale(.98)}
+
+.login-footer{
+  text-align:center;margin-top:1.5rem;
+  font-size:.85rem;color:var(--text2);
+}
+.login-footer a{color:var(--accent-ll);cursor:pointer;text-decoration:none}
+.login-footer a:hover{text-decoration:underline}
+
+.login-error{
+  background:rgba(220,50,50,.1);border:1px solid rgba(220,50,50,.3);
+  color:#f87;border-radius:8px;padding:.6rem 1rem;
+  font-size:.85rem;margin-bottom:1rem;display:none;
+}
+
+/* ══════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════ */
+#page-app{flex-direction:row}
+
+/* sidebar */
+.sidebar{
+  width:240px;min-height:100vh;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:1.5rem 0;
+  position:fixed;top:0;left:0;bottom:0;
+  z-index:50;transition:background var(--transition);
+}
+
+.sidebar-logo{
+  display:flex;align-items:center;gap:10px;
+  padding:0 1.5rem;margin-bottom:2rem;
+}
+.sidebar-logo-icon{
+  width:36px;height:36px;background:var(--accent);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:12px;color:#fff;
+}
+.sidebar-logo-name{font-family:var(--serif);font-size:1.3rem;color:var(--text)}
+.sidebar-logo-name span{color:var(--accent-ll)}
+
+.sidebar-section{
+  font-family:var(--mono);font-size:.65rem;font-weight:500;
+  color:var(--text3);text-transform:uppercase;letter-spacing:.1em;
+  padding:0 1.5rem;margin-bottom:.5rem;margin-top:1rem;
+}
+
+.nav-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.7rem 1.5rem;cursor:pointer;
+  color:var(--text2);font-size:.9rem;font-weight:500;
+  border-left:3px solid transparent;
+  transition:all var(--transition);
+}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{
+  background:var(--surface);
+  color:var(--accent-ll);
+  border-left-color:var(--accent-ll);
+}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+
+.sidebar-bottom{
+  margin-top:auto;padding:1rem 1.5rem;
+  border-top:1px solid var(--border);
+}
+.user-chip{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.6rem;border-radius:10px;
+  background:var(--surface);
+}
+.user-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--accent);display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;font-weight:600;color:#fff;flex-shrink:0;
+}
+.user-name{font-size:.85rem;font-weight:500;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:.7rem;color:var(--text2);font-family:var(--mono)}
+.btn-logout{
+  background:none;border:none;cursor:pointer;color:var(--text3);
+  font-size:.8rem;font-family:var(--sans);transition:color var(--transition);
+  padding:.3rem 0;width:100%;text-align:left;margin-top:.5rem;
+}
+.btn-logout:hover{color:var(--accent-ll)}
+
+/* main area */
+.main{
+  margin-left:240px;flex:1;
+  padding:2rem;min-height:100vh;
+}
+
+/* topbar */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:2rem;
+}
+.topbar-title{font-family:var(--serif);font-size:1.8rem;color:var(--text)}
+.topbar-sub{font-size:.85rem;color:var(--text2);font-family:var(--mono);margin-top:.2rem}
+
+.theme-toggle{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:100px;padding:.4rem .9rem;
+  display:flex;align-items:center;gap:.5rem;
+  cursor:pointer;font-size:.82rem;color:var(--text2);
+  font-family:var(--mono);transition:all var(--transition);
+}
+.theme-toggle:hover{border-color:var(--accent-ll);color:var(--text)}
+
+/* sub-tabs */
+.tab-bar{
+  display:flex;gap:.4rem;
+  border-bottom:1px solid var(--border);
+  margin-bottom:2rem;
+}
+.tab{
+  padding:.6rem 1.2rem;font-size:.88rem;font-weight:500;
+  border-radius:8px 8px 0 0;cursor:pointer;color:var(--text2);
+  border:1px solid transparent;border-bottom:none;
+  transition:all var(--transition);
+}
+.tab:hover{color:var(--text);background:var(--surface2)}
+.tab.active{
+  color:var(--accent-ll);background:var(--surface);
+  border-color:var(--border2);
+  position:relative;
+}
+.tab.active::after{
+  content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
+  background:var(--surface);
+}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* cards */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:1.4rem;
+  transition:background var(--transition);
+}
+.card-title{
+  font-size:.7rem;font-weight:500;font-family:var(--mono);
+  text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text2);margin-bottom:.5rem;
+}
+.card-value{
+  font-size:1.8rem;font-weight:600;color:var(--text);
+  font-family:var(--mono);letter-spacing:-.03em;
+}
+.card-sub{font-size:.8rem;color:var(--text2);margin-top:.3rem}
+.card-sub.positive{color:#4caf7d}
+.card-sub.negative{color:#e07070}
+.card-sub.neutral{color:var(--accent-ll)}
+
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+
+/* section title */
+.section-title{
+  font-size:1rem;font-weight:600;color:var(--text);
+  margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;
+}
+.section-title::before{
+  content:'';display:block;width:3px;height:16px;
+  background:var(--accent-ll);border-radius:2px;
+}
+
+/* status badge */
+.badge{
+  display:inline-block;
+  padding:.25rem .7rem;border-radius:100px;
+  font-size:.72rem;font-family:var(--mono);font-weight:500;
+}
+.badge-green{background:rgba(34,160,0,.12);color:var(--accent-ll);border:1px solid rgba(34,160,0,.25)}
+.badge-amber{background:rgba(200,150,0,.12);color:#d4a017;border:1px solid rgba(200,150,0,.2)}
+.badge-red{background:rgba(220,60,60,.12);color:#e07070;border:1px solid rgba(220,60,60,.2)}
+
+/* progress bar */
+.prog-wrap{margin-bottom:1rem}
+.prog-header{display:flex;justify-content:space-between;font-size:.82rem;color:var(--text2);margin-bottom:.4rem}
+.prog-bar{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .6s ease}
+
+/* transações */
+.tx-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.8rem 1rem;border-radius:10px;
+  background:var(--surface2);margin-bottom:.5rem;
+  border:1px solid var(--border);
+}
+.tx-name{font-size:.9rem;color:var(--text);font-weight:500}
+.tx-cat{font-size:.75rem;color:var(--text2);font-family:var(--mono);margin-top:.1rem}
+.tx-val{font-family:var(--mono);font-weight:600;font-size:.9rem}
+
+/* rec cards */
+.rec-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.2rem 1.4rem;
+  margin-bottom:.8rem;display:flex;align-items:flex-start;gap:1rem;
+}
+.rec-icon{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+}
+.rec-icon.green{background:rgba(17,80,0,.15)}
+.rec-icon.amber{background:rgba(200,150,0,.12)}
+.rec-icon.red{background:rgba(220,60,60,.1)}
+.rec-body{flex:1}
+.rec-title{font-weight:600;font-size:.95rem;color:var(--text);margin-bottom:.3rem}
+.rec-desc{font-size:.85rem;color:var(--text2);line-height:1.6}
+.rec-impact{
+  font-family:var(--mono);font-size:.8rem;font-weight:500;
+  margin-top:.5rem;
+}
+
+/* metas */
+.meta-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.4rem;margin-bottom:.8rem;
+}
+.meta-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+.meta-name{font-weight:600;font-size:.95rem;color:var(--text)}
+.meta-deadline{font-size:.75rem;color:var(--text2);font-family:var(--mono);margin-top:.2rem}
+.meta-valor{font-family:var(--mono);font-size:.85rem;font-weight:500;color:var(--accent-ll)}
+
+/* ── MODELO MATEMÁTICO ── */
+.matrix-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.6rem;margin-bottom:1.5rem;
+}
+.matrix-label{
+  font-family:var(--mono);font-size:.75rem;color:var(--accent-ll);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;
+  display:flex;align-items:center;gap:.5rem;
+}
+.matrix-label::before{content:'[ ]';opacity:.5}
+.matrix-eq{
+  font-family:var(--mono);font-size:1.1rem;color:var(--text);
+  margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
+}
+.matrix-eq .eq-sym{color:var(--accent-ll);font-size:1.3rem}
+
+.matrix-grid{
+  display:inline-grid;
+  border-left:3px solid var(--text2);border-right:3px solid var(--text2);
+  padding:.5rem .8rem;gap:.4rem;
+  position:relative;
+}
+.matrix-grid::before,.matrix-grid::after{
+  content:'';position:absolute;
+  width:8px;height:calc(100% + 6px);top:-3px;
+  border-top:3px solid var(--text2);border-bottom:3px solid var(--text2);
+}
+.matrix-grid::before{left:-3px}
+.matrix-grid::after{right:-3px}
+
+.matrix-input{
+  width:64px;padding:.4rem .5rem;
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:6px;color:var(--text);font-family:var(--mono);
+  font-size:.9rem;text-align:center;outline:none;
+  transition:border-color var(--transition),box-shadow var(--transition);
+}
+.matrix-input:focus{border-color:var(--accent-ll);box-shadow:0 0 0 2px var(--accent-glow)}
+
+.vec-grid{
+  display:inline-grid;grid-template-columns:1fr;
+  border-left:3px solid var(--text2);border-right:3px solid var(--text2);
+  padding:.5rem .8rem;gap:.4rem;
+  position:relative;
+}
+.vec-grid::before,.vec-grid::after{
+  content:'';position:absolute;
+  width:8px;height:calc(100% + 6px);top:-3px;
+  border-top:3px solid var(--text2);border-bottom:3px solid var(--text2);
+}
+.vec-grid::before{left:-3px}
+.vec-grid::after{right:-3px}
+
+.btn-solve{
+  background:var(--accent);color:#fff;border:none;
+  padding:.75rem 2rem;border-radius:var(--radius);
+  font-family:var(--mono);font-weight:600;font-size:.9rem;
+  cursor:pointer;transition:background var(--transition),transform .1s;
+  display:flex;align-items:center;gap:.5rem;margin-top:1.5rem;
+}
+.btn-solve:hover{background:var(--accent-l)}
+.btn-solve:active{transform:scale(.97)}
+
+.solution-box{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:1.2rem 1.4rem;
+  margin-top:1rem;display:none;
+}
+.solution-box.visible{display:block}
+.sol-label{font-family:var(--mono);font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.8rem}
+.sol-vec{display:flex;gap:.5rem;flex-wrap:wrap}
+.sol-cell{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:8px;padding:.5rem 1rem;
+  font-family:var(--mono);font-size:.95rem;color:var(--accent-ll);
+  font-weight:500;
+}
+.sol-err{color:#e07070;font-family:var(--mono);font-size:.85rem}
+
+.matrix-size-ctrl{
+  display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;
+}
+.matrix-size-ctrl label{font-size:.82rem;color:var(--text2);font-family:var(--mono)}
+.size-btn{
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);border-radius:6px;padding:.3rem .7rem;
+  font-family:var(--mono);font-size:.85rem;cursor:pointer;
+  transition:all var(--transition);
+}
+.size-btn:hover{border-color:var(--accent-ll);color:var(--accent-ll)}
+.size-display{
+  font-family:var(--mono);font-size:.9rem;font-weight:600;
+  color:var(--accent-ll);min-width:24px;text-align:center;
+}
+
+/* mini chart bars */
+.chart-bars{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:.8rem}
+.bar{
+  flex:1;border-radius:4px 4px 0 0;
+  background:rgba(17,80,0,.25);position:relative;min-height:6px;
+  transition:background .2s;cursor:default;
+}
+.bar.hi{background:var(--accent)}
+.bar:hover{background:var(--accent-ll)!important}
+.bar-lbl{
+  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:.6rem;color:var(--text3);white-space:nowrap;
+}
+
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%)}
+  .main{margin-left:0}
+  .grid-4{grid-template-columns:1fr 1fr}
+}
+@media(max-width:540px){
+  .grid-4{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 
-<canvas id="particle-canvas"></canvas>
-
-<!-- ════════════════════════════════════
-     TITLE SCREEN
-════════════════════════════════════ -->
-<div id="title-screen" class="screen active">
-  <canvas class="matrix-rain-canvas" id="rain-canvas"></canvas>
-  <div class="title-content">
-    <div class="title-logo">
-      <h1>MATRIX<span style="color:var(--accent2)">ROGUE</span></h1>
-      <div class="subtitle">[ ÁLGEBRA LINEAR RPG ]</div>
+<!-- ══════════════ LOGIN ══════════════ -->
+<div class="page active" id="page-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">FM</div>
+      <div class="login-logo-name">Fin<span>Matrix</span></div>
     </div>
-
-    <div class="title-matrix-preview">
-      ⎡ 2  -1  0 ⎤ &nbsp;&nbsp; ⎡ x ⎤ &nbsp;&nbsp; ⎡ 4 ⎤<br>
-      ⎢ 0   3  1 ⎥ · ⎢ y ⎥ = ⎢ 9 ⎥<br>
-      ⎣ 1   0 -2 ⎦ &nbsp;&nbsp; ⎣ z ⎦ &nbsp;&nbsp; ⎣ 3 ⎦
+    <div class="login-title">Bem-vindo de volta</div>
+    <div class="login-sub">Entre com suas credenciais para continuar</div>
+    <div class="login-error" id="login-error">E-mail ou senha incorretos.</div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="inp-email" placeholder="seu@email.com" autocomplete="email">
     </div>
-
-    <div class="how-to-box">
-      Explore masmorras usando <strong>matrizes</strong> como armas.<br>
-      Resolva <strong>sistemas lineares</strong>, calcule <strong>determinantes</strong>,<br>
-      encontre <strong>autovetores</strong> — e destrua inimigos com matemática!
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="inp-senha" placeholder="••••••••" autocomplete="current-password">
     </div>
-
-    <button class="btn-primary" onclick="startGame()"><span>▶ INICIAR JORNADA</span></button>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div class="login-footer">
+      Não tem conta? <a onclick="doLogin()">Cadastre-se grátis</a>
+    </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════
-     GAME SCREEN
-════════════════════════════════════ -->
-<div id="game-screen" class="screen">
+<!-- ══════════════ APP ══════════════ -->
+<div class="page" id="page-app">
 
-  <!-- TOP HUD -->
-  <div class="hud-top">
-    <div class="hud-title">MATRIXROGUE</div>
-    <div class="hud-sep"></div>
-
-    <div class="hud-bar-group">
-      <div class="hud-bar-label">HP</div>
-      <div class="hud-bar"><div class="hud-bar-fill hp" id="hud-hp" style="width:100%"></div></div>
-      <div class="hud-bar-val" id="hud-hp-val">100/100</div>
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">FM</div>
+      <div class="sidebar-logo-name">Fin<span>Matrix</span></div>
     </div>
 
-    <div class="hud-bar-group">
-      <div class="hud-bar-label">MP</div>
-      <div class="hud-bar"><div class="hud-bar-fill mp" id="hud-mp" style="width:100%"></div></div>
-      <div class="hud-bar-val" id="hud-mp-val">60/60</div>
+    <div class="sidebar-section">Principal</div>
+    <div class="nav-item active" onclick="showNav('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="showNav('recomendacoes',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17H8v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>
+      Recomendações
+    </div>
+    <div class="nav-item" onclick="showNav('metas',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Metas
+    </div>
+    <div class="nav-item" onclick="showNav('modelo',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16M9 2v20M15 2v20"/></svg>
+      Modelo Matemático
     </div>
 
-    <div class="hud-bar-group">
-      <div class="hud-bar-label">XP</div>
-      <div class="hud-bar"><div class="hud-bar-fill xp" id="hud-xp" style="width:0%"></div></div>
-      <div class="hud-bar-val" id="hud-xp-val">0/100</div>
-    </div>
-
-    <div class="hud-sep"></div>
-
-    <div class="hud-stat">
-      <div class="hud-stat-val" id="hud-level">1</div>
-      <div class="hud-stat-lbl">NÍVEL</div>
-    </div>
-
-    <div class="hud-stat">
-      <div class="hud-stat-val" id="hud-floor">1</div>
-      <div class="hud-stat-lbl">ANDAR</div>
-    </div>
-
-    <div class="hud-stat">
-      <div class="hud-stat-val" id="hud-gold">0</div>
-      <div class="hud-stat-lbl">OURO</div>
-    </div>
-
-    <div class="hud-right">
-      <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text2)" id="hud-room-type"></div>
-    </div>
-  </div>
-
-  <!-- MAIN BODY -->
-  <div class="game-body">
-
-    <!-- LEFT: Player & Abilities -->
-    <div class="panel-left">
-      <div class="panel-section-title">PERSONAGEM</div>
-
-      <div class="avatar-area">
-        <div class="avatar-sprite" id="player-sprite">🧙</div>
-        <div class="avatar-name" id="player-name">Algebrista</div>
-        <div class="avatar-class" id="player-class">Mago Matricial · Nv.1</div>
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <div class="user-avatar">EA</div>
+        <div>
+          <div class="user-name">Everton Andrade</div>
+          <div class="user-role">Plano Pro</div>
+        </div>
       </div>
+      <button class="btn-logout" onclick="doLogout()">← Sair da conta</button>
+    </div>
+  </nav>
 
-      <div class="panel-section-title" style="margin-top:0.25rem">HABILIDADES</div>
+  <!-- MAIN -->
+  <main class="main">
 
-      <div id="abilities-list"></div>
-
-      <div class="panel-section-title" style="margin-top:0.25rem">ATRIBUTOS</div>
-      <div id="stats-display" style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text2);line-height:1.9"></div>
-
-      <div class="panel-section-title">PASSIVAS</div>
-      <div id="perks-display" style="font-family:var(--font-body);font-size:0.7rem;color:var(--text2);line-height:1.7"></div>
+    <!-- topbar -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub">Visão geral · Julho 2025</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀ Modo claro</button>
     </div>
 
-    <!-- CENTER: Dungeon / Battle -->
-    <div class="panel-center">
-      <canvas id="dungeon-canvas"></canvas>
-
-      <!-- Battle UI (inside center panel) -->
-      <div class="battle-overlay" id="battle-overlay">
-        <div class="battle-arena">
-          <div class="combatant">
-            <div class="combatant-sprite" id="b-player-sprite">🧙</div>
-            <div class="combatant-name">ALGEBRISTA</div>
-            <div class="combatant-hp" id="b-player-hp">❤ 100</div>
-          </div>
-          <div class="vs-text">VS</div>
-          <div class="combatant">
-            <div class="combatant-sprite" id="b-enemy-sprite">👹</div>
-            <div class="combatant-name" id="b-enemy-name">INIMIGO</div>
-            <div class="combatant-hp" id="b-enemy-hp">❤ 50</div>
-          </div>
+    <!-- ── DASHBOARD ── -->
+    <div id="nav-dashboard" class="nav-panel">
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title">Saldo consolidado</div>
+          <div class="card-value">R$48.320</div>
+          <div class="card-sub positive">↑ 12,4% este mês</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Receitas</div>
+          <div class="card-value">R$9.700</div>
+          <div class="card-sub positive">↑ +R$1.200 vs mês ant.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Despesas</div>
+          <div class="card-value">R$7.450</div>
+          <div class="card-sub negative">↑ +R$320 vs mês ant.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Cumprimento de metas</div>
+          <div class="card-value">87%</div>
+          <div class="card-sub neutral">→ R$1.2k restam</div>
         </div>
       </div>
 
-      <!-- Choice overlay -->
-      <div class="choice-overlay" id="choice-overlay">
-        <div class="choice-title">NOVA SALA</div>
-        <div class="choice-subtitle">Escolha sua próxima sala</div>
-        <div class="choice-cards" id="choice-cards"></div>
+      <!-- status modelo -->
+      <div class="card" style="margin-bottom:1.5rem;border-color:rgba(34,160,0,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <div>
+            <div class="card-title">Status do modelo matricial</div>
+            <div style="font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:.3rem">
+              Sistema Ax = b processado <span class="badge badge-green" style="margin-left:.5rem">✓ Ok</span>
+            </div>
+            <div style="font-size:.85rem;color:var(--text2)">3 variáveis fora do equilíbrio · Meta atingível em 47 dias</div>
+          </div>
+          <button class="btn-solve" style="margin-top:0" onclick="showNav('modelo',document.querySelectorAll('.nav-item')[3])">Ver modelo →</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">Distribuição de gastos</div>
+          <div class="chart-bars">
+            <div class="bar" style="height:58%"><span class="bar-lbl">Moradia</span></div>
+            <div class="bar" style="height:32%"><span class="bar-lbl">Alimentação</span></div>
+            <div class="bar hi" style="height:78%"><span class="bar-lbl">Transporte</span></div>
+            <div class="bar" style="height:45%"><span class="bar-lbl">Lazer</span></div>
+            <div class="bar" style="height:20%"><span class="bar-lbl">Saúde</span></div>
+            <div class="bar" style="height:28%"><span class="bar-lbl">Educação</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">Últimas transações</div>
+          <div class="tx-row">
+            <div><div class="tx-name">Salário</div><div class="tx-cat">Receita</div></div>
+            <div class="tx-val" style="color:#4caf7d">+R$8.500</div>
+          </div>
+          <div class="tx-row">
+            <div><div class="tx-name">Supermercado</div><div class="tx-cat">Alimentação</div></div>
+            <div class="tx-val" style="color:#e07070">-R$320</div>
+          </div>
+          <div class="tx-row">
+            <div><div class="tx-name">Freelance</div><div class="tx-cat">Receita extra</div></div>
+            <div class="tx-val" style="color:#4caf7d">+R$1.200</div>
+          </div>
+          <div class="tx-row">
+            <div><div class="tx-name">Conta de luz</div><div class="tx-cat">Utilidades</div></div>
+            <div class="tx-val" style="color:#e07070">-R$180</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- BOTTOM: Combat Log -->
-    <div class="panel-bottom">
-      <div class="log-header">
-        <div class="log-title">LOG DE BATALHA</div>
-        <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text2)" id="log-turn">Turno 1</div>
+    <!-- ── RECOMENDAÇÕES ── -->
+    <div id="nav-recomendacoes" class="nav-panel" style="display:none">
+      <div class="card" style="margin-bottom:1.5rem;border-color:rgba(34,160,0,.3)">
+        <div style="font-size:.85rem;color:var(--text2);font-family:var(--mono)">
+          Baseado na solução do sistema <strong style="color:var(--accent-ll)">Ax = b</strong> com seus dados reais · 4 ajustes identificados
+        </div>
       </div>
-      <div id="combat-log"></div>
+
+      <div class="section-title">Plano de ajuste automático</div>
+
+      <div class="rec-card">
+        <div class="rec-icon red">📉</div>
+        <div class="rec-body">
+          <div class="rec-title">Reduzir gastos com lazer</div>
+          <div class="rec-desc">Seus gastos com lazer estão 38% acima do vetor ótimo calculado pelo modelo. A variável x₃ indica necessidade de ajuste imediato.</div>
+          <div class="rec-impact" style="color:#e07070">Economia potencial: -R$ 420/mês <span class="badge badge-red" style="margin-left:.5rem">Urgente</span></div>
+        </div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-icon red">🏠</div>
+        <div class="rec-body">
+          <div class="rec-title">Renegociar moradia</div>
+          <div class="rec-desc">A variável moradia representa 42% do orçamento. O modelo indica que o coeficiente ideal seria ≤ 30% da receita total.</div>
+          <div class="rec-impact" style="color:#e07070">Economia potencial: -R$ 800/mês <span class="badge badge-red" style="margin-left:.5rem">Urgente</span></div>
+        </div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-icon green">💰</div>
+        <div class="rec-body">
+          <div class="rec-title">Aumentar reserva de emergência</div>
+          <div class="rec-desc">A solução do sistema indica que aportar R$ 300/mês garante 6 meses de reserva em 14 meses, sem comprometer outras metas.</div>
+          <div class="rec-impact" style="color:var(--accent-ll)">Aporte sugerido: +R$ 300/mês <span class="badge badge-green" style="margin-left:.5rem">Recomendado</span></div>
+        </div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-icon amber">📊</div>
+        <div class="rec-body">
+          <div class="rec-title">Revisar assinaturas fixas</div>
+          <div class="rec-desc">Identificamos R$ 185/mês em serviços recorrentes com baixa utilização no último trimestre.</div>
+          <div class="rec-impact" style="color:#d4a017">Economia potencial: -R$ 185/mês <span class="badge badge-amber" style="margin-left:.5rem">Atenção</span></div>
+        </div>
+      </div>
     </div>
 
-    <!-- RIGHT: Challenge Panel -->
-    <div class="panel-right">
-      <div class="panel-section-title">DESAFIO ATUAL</div>
+    <!-- ── METAS ── -->
+    <div id="nav-metas" class="nav-panel" style="display:none">
+      <div class="grid-4" style="margin-bottom:1.5rem">
+        <div class="card">
+          <div class="card-title">Total de metas</div>
+          <div class="card-value">4</div>
+          <div class="card-sub neutral">→ 2 no prazo</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Em dia</div>
+          <div class="card-value" style="color:#4caf7d">2</div>
+          <div class="card-sub positive">↑ no caminho certo</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Atrasadas</div>
+          <div class="card-value" style="color:#e07070">1</div>
+          <div class="card-sub negative">↓ revisão necessária</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Concluídas</div>
+          <div class="card-value">1</div>
+          <div class="card-sub positive">✓ este mês</div>
+        </div>
+      </div>
 
-      <div id="enemy-info-box"></div>
+      <div class="section-title">Suas metas</div>
 
-      <div class="panel-section-title">PROBLEMA</div>
-      <div id="challenge-description" style="font-family:var(--font-body);font-size:0.78rem;color:var(--text2);line-height:1.6;margin-bottom:0.5rem"></div>
+      <div class="meta-card">
+        <div class="meta-header">
+          <div><div class="meta-name">Reserva de emergência</div><div class="meta-deadline">Prazo: dezembro 2025</div></div>
+          <div><div class="meta-valor">R$4.200 / R$6.000</div><span class="badge badge-green">No prazo</span></div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="width:70%"></div></div>
+        <div style="font-size:.75rem;color:var(--text2);margin-top:.4rem;font-family:var(--mono)">70% concluído</div>
+      </div>
 
-      <div id="matrix-problem-display"></div>
+      <div class="meta-card">
+        <div class="meta-header">
+          <div><div class="meta-name">Viagem internacional</div><div class="meta-deadline">Prazo: março 2026</div></div>
+          <div><div class="meta-valor">R$3.500 / R$8.000</div><span class="badge badge-amber">Atenção</span></div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="width:44%;background:#d4a017"></div></div>
+        <div style="font-size:.75rem;color:var(--text2);margin-top:.4rem;font-family:var(--mono)">44% concluído</div>
+      </div>
 
-      <div class="panel-section-title">SUA RESPOSTA</div>
-      <div id="answer-area"></div>
+      <div class="meta-card">
+        <div class="meta-header">
+          <div><div class="meta-name">Notebook novo</div><div class="meta-deadline">Prazo: setembro 2025</div></div>
+          <div><div class="meta-valor">R$800 / R$3.500</div><span class="badge badge-red">Atrasada</span></div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="width:23%;background:#e07070"></div></div>
+        <div style="font-size:.75rem;color:var(--text2);margin-top:.4rem;font-family:var(--mono)">23% concluído</div>
+      </div>
 
-      <div id="feedback-area"></div>
-
-      <div id="hint-area"></div>
-
-      <div id="action-btns"></div>
+      <div class="meta-card">
+        <div class="meta-header">
+          <div><div class="meta-name">Quitar cartão de crédito</div><div class="meta-deadline">Concluída em julho 2025</div></div>
+          <div><div class="meta-valor">R$2.300 / R$2.300</div><span class="badge badge-green">✓ Concluída</span></div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div>
+        <div style="font-size:.75rem;color:var(--text2);margin-top:.4rem;font-family:var(--mono)">100% concluído</div>
+      </div>
     </div>
 
-  </div><!-- end game-body -->
+    <!-- ── MODELO MATEMÁTICO ── -->
+    <div id="nav-modelo" class="nav-panel" style="display:none">
 
-</div><!-- end game-screen -->
+      <div class="card" style="margin-bottom:1.5rem;border-color:rgba(34,160,0,.3)">
+        <div style="font-size:.85rem;color:var(--text2);line-height:1.7">
+          Edite a matriz <strong style="color:var(--accent-ll);font-family:var(--mono)">A</strong> e o vetor 
+          <strong style="color:var(--accent-ll);font-family:var(--mono)">b</strong> abaixo. O sistema resolve 
+          <strong style="color:var(--accent-ll);font-family:var(--mono)">Ax = b</strong> usando eliminação gaussiana e exibe o vetor solução 
+          <strong style="color:var(--accent-ll);font-family:var(--mono)">x</strong>.
+        </div>
+      </div>
 
-<!-- LEVEL UP OVERLAY -->
-<div class="levelup-overlay" id="levelup-overlay">
-  <div class="levelup-title">⭐ LEVEL UP! ⭐</div>
-  <div style="font-family:var(--font-hud);font-size:0.8rem;color:var(--text2);letter-spacing:0.2em">Escolha uma habilidade passiva</div>
-  <div class="perk-cards" id="perk-cards"></div>
+      <!-- controle de tamanho -->
+      <div class="matrix-section">
+        <div class="matrix-label">Tamanho da matriz</div>
+        <div class="matrix-size-ctrl">
+          <label>Linhas / colunas:</label>
+          <button class="size-btn" onclick="changeSize(-1)">−</button>
+          <span class="size-display" id="size-display">3</span>
+          <button class="size-btn" onclick="changeSize(1)">+</button>
+          <span style="font-size:.8rem;color:var(--text3);font-family:var(--mono)">(máx. 5×5)</span>
+        </div>
+
+        <div class="matrix-eq" id="matrix-eq-display">
+          <!-- renderizado por JS -->
+        </div>
+
+        <button class="btn-solve" onclick="solveSystem()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Resolver Ax = b
+        </button>
+
+        <div class="solution-box" id="solution-box">
+          <div class="sol-label">Vetor solução x =</div>
+          <div class="sol-vec" id="sol-vec"></div>
+        </div>
+      </div>
+
+      <!-- interpretação -->
+      <div class="matrix-section">
+        <div class="matrix-label">Interpretação financeira</div>
+        <div style="font-size:.88rem;color:var(--text2);line-height:1.8">
+          No contexto do FinMatrix, cada linha da matriz <span style="font-family:var(--mono);color:var(--accent-ll)">A</span> representa a relação entre categorias de gastos. O vetor <span style="font-family:var(--mono);color:var(--accent-ll)">b</span> são suas metas mensais em reais. O vetor solução <span style="font-family:var(--mono);color:var(--accent-ll)">x</span> indica o valor ideal que cada categoria deve ter para equilibrar o orçamento simultaneamente.
+        </div>
+        <div style="margin-top:1rem;padding:1rem;background:var(--bg2);border-radius:8px;font-family:var(--mono);font-size:.8rem;color:var(--text2);line-height:1.9">
+          Exemplo: linha 1 → [1, 0.3, 0.1] significa que moradia depende 30% de alimentação e 10% de lazer<br>
+          b[0] = 3500 → meta de moradia: R$3.500/mês<br>
+          x[0] = ? → valor ideal resolvido automaticamente
+        </div>
+      </div>
+    </div>
+
+  </main>
 </div>
-
-<!-- GAME OVER OVERLAY -->
-<div class="gameover-overlay" id="gameover-overlay">
-  <div class="gameover-title">☠ DERROTA ☠</div>
-  <div style="font-family:var(--font-body);font-size:1.1rem;color:var(--text2)">Seu algebrista foi derrotado...</div>
-  <div id="gameover-stats" style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text2);text-align:center;line-height:2"></div>
-  <button class="btn-primary" onclick="restartGame()"><span>↺ TENTAR NOVAMENTE</span></button>
-</div>
-
-<div class="tooltip" id="tooltip"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-//   MATRIX RAIN (title screen)
-// ═══════════════════════════════════════════════════════════════
-const rainCanvas = document.getElementById('rain-canvas');
-const rainCtx = rainCanvas.getContext('2d');
-function initRain() {
-  rainCanvas.width = window.innerWidth;
-  rainCanvas.height = window.innerHeight;
-  const cols = Math.floor(rainCanvas.width / 20);
-  const drops = Array(cols).fill(1);
-  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz∑∏∂∇∫√±×÷≠≤≥→←↑↓αβγδεζηθ';
-  setInterval(() => {
-    rainCtx.fillStyle = 'rgba(5,10,15,0.05)';
-    rainCtx.fillRect(0,0,rainCanvas.width,rainCanvas.height);
-    rainCtx.fillStyle = '#00d4ff';
-    rainCtx.font = '14px Share Tech Mono';
-    drops.forEach((y,x) => {
-      rainCtx.fillText(chars[Math.floor(Math.random()*chars.length)], x*20, y*20);
-      if (y * 20 > rainCanvas.height && Math.random() > 0.975) drops[x] = 0;
-      drops[x]++;
-    });
-  }, 50);
+// ── LOGIN ──
+function doLogin(){
+  const e=document.getElementById('inp-email').value;
+  const s=document.getElementById('inp-senha').value;
+  const err=document.getElementById('login-error');
+  if(!e||!s){err.style.display='block';err.textContent='Preencha todos os campos.';return}
+  err.style.display='none';
+  document.getElementById('page-login').classList.remove('active');
+  document.getElementById('page-app').classList.add('active');
+}
+document.getElementById('inp-senha').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+
+function doLogout(){
+  document.getElementById('page-app').classList.remove('active');
+  document.getElementById('page-login').classList.add('active');
 }
 
-// ═══════════════════════════════════════════════════════════════
-//   PARTICLE SYSTEM
-// ═══════════════════════════════════════════════════════════════
-const pCanvas = document.getElementById('particle-canvas');
-const pCtx = pCanvas.getContext('2d');
-pCanvas.width = window.innerWidth;
-pCanvas.height = window.innerHeight;
-let particles = [];
-
-function spawnParticle(x,y,color,text) {
-  particles.push({ x, y, vx: (Math.random()-0.5)*3, vy: -Math.random()*3-2, alpha: 1, color, text, life: 60 });
-}
-
-function updateParticles() {
-  pCtx.clearRect(0,0,pCanvas.width,pCanvas.height);
-  particles = particles.filter(p => p.alpha > 0);
-  particles.forEach(p => {
-    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.alpha -= 0.015; p.life--;
-    pCtx.globalAlpha = p.alpha;
-    pCtx.fillStyle = p.color;
-    pCtx.font = 'bold 14px Orbitron';
-    pCtx.fillText(p.text, p.x, p.y);
-  });
-  pCtx.globalAlpha = 1;
-  requestAnimationFrame(updateParticles);
-}
-updateParticles();
-
-// ═══════════════════════════════════════════════════════════════
-//   GAME STATE
-// ═══════════════════════════════════════════════════════════════
-let G = {};
-
-function createPlayer() {
-  return {
-    hp: 100, maxHp: 100,
-    mp: 60, maxMp: 60,
-    xp: 0, xpNext: 100,
-    level: 1, gold: 0, floor: 1,
-    atk: 20, def: 5, critChance: 0.1,
-    perks: [],
-    abilities: ['gauss', 'determinant', 'dot_product'],
-    selectedAbility: 'gauss',
-    correctStreak: 0,
-    totalCorrect: 0,
-    totalWrong: 0,
-    enemiesDefeated: 0,
+// ── NAVEGAÇÃO ──
+function showNav(id, el){
+  document.querySelectorAll('.nav-panel').forEach(p=>p.style.display='none');
+  document.getElementById('nav-'+id).style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  const titles={
+    dashboard:['Dashboard','Visão geral · Julho 2025'],
+    recomendacoes:['Recomendações','Plano de ajuste automático · Modelo Ax = b'],
+    metas:['Metas','Objetivos financeiros · Acompanhamento'],
+    modelo:['Modelo Matemático','Sistema linear interativo · Ax = b'],
   };
+  document.getElementById('topbar-title').textContent=titles[id][0];
+  document.getElementById('topbar-sub').textContent=titles[id][1];
+  if(id==='modelo')renderMatrix();
 }
 
-const ABILITIES = {
-  gauss: {
-    name: 'Eliminação de Gauss',
-    desc: 'Resolve sistema linear 2×2',
-    icon: '⚡',
-    cost: 0,
-    dmgMult: 1.0,
-    color: '#00d4ff',
-    challenge: 'linear2x2',
-  },
-  determinant: {
-    name: 'Feitiço Determinante',
-    desc: 'Calcula o det de matriz 2×2',
-    icon: '🔥',
-    cost: 10,
-    dmgMult: 1.5,
-    color: '#ff6b35',
-    challenge: 'det2x2',
-  },
-  dot_product: {
-    name: 'Raio Produto Escalar',
-    desc: 'Calcula produto escalar 3D',
-    icon: '💫',
-    cost: 8,
-    dmgMult: 1.3,
-    color: '#00ff88',
-    challenge: 'dot3d',
-  },
-  matrix_mult: {
-    name: 'Golpe Matricial',
-    desc: 'Multiplica matrizes 2×2',
-    icon: '🌊',
-    cost: 15,
-    dmgMult: 2.0,
-    color: '#c678dd',
-    challenge: 'matmul2x2',
-  },
-  inverse: {
-    name: 'Inversão Arcana',
-    desc: 'Inverte matriz 2×2 (inteira)',
-    icon: '🌀',
-    cost: 20,
-    dmgMult: 2.5,
-    color: '#ffd700',
-    challenge: 'inverse2x2',
-  },
-  eigenvalue: {
-    name: 'Autovalor Final',
-    desc: 'Encontra autovalor de 2×2',
-    icon: '⭐',
-    cost: 25,
-    dmgMult: 3.0,
-    color: '#ff4444',
-    challenge: 'eigenvalue2x2',
-  },
+// ── TEMA ──
+function toggleTheme(){
+  const html=document.documentElement;
+  const dark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('theme-btn').textContent=dark?'☾ Modo escuro':'☀ Modo claro';
+}
+
+// ── MODELO MATEMÁTICO ──
+let N=3;
+
+function changeSize(d){
+  N=Math.min(5,Math.max(2,N+d));
+  document.getElementById('size-display').textContent=N;
+  document.getElementById('solution-box').classList.remove('visible');
+  renderMatrix();
+}
+
+// Valores default para A e b
+const defaultA={
+  2:[[2,1],[1,3]],
+  3:[[2,1,0],[1,3,1],[0,1,4]],
+  4:[[4,1,0,0],[1,4,1,0],[0,1,4,1],[0,0,1,3]],
+  5:[[5,1,0,0,0],[1,4,1,0,0],[0,1,4,1,0],[0,0,1,4,1],[0,0,0,1,3]],
 };
+const defaultB={2:[5,10],3:[8500,3200,1500],4:[8500,3200,1500,2000],5:[8500,3200,1500,2000,500]};
 
-const ENEMIES = [
-  { name:'Golem Escalar', icon:'🗿', hpBase:60, atkBase:12, xp:40, gold:15, type:'normal' },
-  { name:'Zumbi Vetorial', icon:'🧟', hpBase:45, atkBase:18, xp:35, gold:12, type:'fast' },
-  { name:'Dragão Matricial', icon:'🐉', hpBase:120, atkBase:20, xp:80, gold:40, type:'boss' },
-  { name:'Fantasma Linear', icon:'👻', hpBase:35, atkBase:25, xp:50, gold:20, type:'ghost' },
-  { name:'Cubo Determinante', icon:'🟫', hpBase:80, atkBase:14, xp:55, gold:25, type:'normal' },
-  { name:'Oráculo Eigenvalue', icon:'🔮', hpBase:100, atkBase:22, xp:90, gold:45, type:'boss' },
-  { name:'Elemental Ortogonal', icon:'🌀', hpBase:70, atkBase:16, xp:60, gold:30, type:'normal' },
-  { name:'Lich Inverso', icon:'💀', hpBase:150, atkBase:28, xp:120, gold:60, type:'boss' },
-];
+function renderMatrix(){
+  const eq=document.getElementById('matrix-eq-display');
+  const dA=defaultA[N], dB=defaultB[N];
 
-const PERKS = [
-  { id:'mp_regen', name:'Fluxo Mágico', icon:'💧', desc:'+5 MP a cada turno correto' },
-  { id:'crit_boost', name:'Precisão Crítica', icon:'🎯', desc:'+15% chance de crítico' },
-  { id:'hp_leech', name:'Drenagem Vital', icon:'🩸', desc:'Acertos curam 5 HP' },
-  { id:'dmg_boost', name:'Matriz de Poder', icon:'⚡', desc:'+25% de dano base' },
-  { id:'def_boost', name:'Escudo Ortogonal', icon:'🛡', desc:'+10 de defesa' },
-  { id:'xp_boost', name:'Estudante Brilhante', icon:'📚', desc:'+30% de XP ganho' },
-  { id:'gold_boost', name:'Alquimia Numérica', icon:'💰', desc:'+50% de ouro ganho' },
-  { id:'streak_bonus', name:'Sequência Fatal', icon:'🔥', desc:'Bônus de dano por acerto consecutivo' },
-];
+  // Matriz A
+  let aHtml=`<div style="display:inline-block"><div style="font-family:var(--mono);font-size:.75rem;color:var(--text3);margin-bottom:.3rem;text-align:center">A</div>
+    <div class="matrix-grid" style="grid-template-columns:repeat(${N},1fr)">`;
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++)
+    aHtml+=`<input class="matrix-input" id="a${i}${j}" type="number" step="0.01" value="${dA[i][j]}">`;
+  aHtml+=`</div></div>`;
 
-// ═══════════════════════════════════════════════════════════════
-//   DUNGEON MAP CANVAS
-// ═══════════════════════════════════════════════════════════════
-const dungeonCanvas = document.getElementById('dungeon-canvas');
-const dCtx = dungeonCanvas.getContext('2d');
-const TILE = 32;
+  // Vetor b
+  let bHtml=`<div style="display:inline-block"><div style="font-family:var(--mono);font-size:.75rem;color:var(--text3);margin-bottom:.3rem;text-align:center">b</div>
+    <div class="vec-grid">`;
+  for(let i=0;i<N;i++)
+    bHtml+=`<input class="matrix-input" id="b${i}" type="number" step="0.01" value="${dB[i]}">`;
+  bHtml+=`</div></div>`;
 
-let dungeonMap = { rooms: [], currentRoom: null, visitedRooms: new Set(), playerPos: {x:0,y:0} };
+  eq.innerHTML=`${aHtml}
+    <div class="eq-sym">·</div>
+    <div style="display:inline-block"><div style="font-family:var(--mono);font-size:.75rem;color:var(--accent-ll);margin-bottom:.3rem;text-align:center">x</div>
+      <div class="vec-grid">${Array.from({length:N},(_,i)=>`<div style="padding:.4rem .5rem;font-family:var(--mono);font-size:.9rem;color:var(--text3)">x${toSub(i)}</div>`).join('')}</div>
+    </div>
+    <div class="eq-sym">=</div>
+    ${bHtml}`;
+}
 
-function generateFloor() {
-  const rooms = [];
-  const cols = 7, rows = 5;
-  dungeonCanvas.width = cols * TILE * 2;
-  dungeonCanvas.height = rows * TILE * 2;
+function toSub(i){return['₁','₂','₃','₄','₅'][i]}
 
-  // Generate connected rooms
-  let id = 0;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (Math.random() < 0.65 || (r===0&&c===0)) {
-        const types = ['battle','battle','battle','treasure','shop','rest'];
-        let t = types[Math.floor(Math.random()*types.length)];
-        if (r===0&&c===0) t = 'start';
-        if (r===rows-1 && c===cols-1) t = 'boss';
-        rooms.push({ id: id++, col:c, row:r, type:t, cleared:false, connections:[] });
-      }
+// Eliminação gaussiana
+function gaussianElimination(A,b){
+  const n=A.length;
+  const M=A.map((row,i)=>[...row,b[i]]);
+  for(let col=0;col<n;col++){
+    let pivot=col;
+    for(let r=col+1;r<n;r++) if(Math.abs(M[r][col])>Math.abs(M[pivot][col]))pivot=r;
+    [M[col],M[pivot]]=[M[pivot],M[col]];
+    if(Math.abs(M[col][col])<1e-12) return null; // singular
+    for(let r=0;r<n;r++){
+      if(r===col)continue;
+      const f=M[r][col]/M[col][col];
+      for(let c=col;c<=n;c++) M[r][c]-=f*M[col][c];
     }
   }
-
-  // Connect adjacent rooms
-  rooms.forEach(rm => {
-    rooms.forEach(rm2 => {
-      const dc = Math.abs(rm.col - rm2.col), dr = Math.abs(rm.row - rm2.row);
-      if ((dc===1&&dr===0)||(dc===0&&dr===1)) {
-        if (!rm.connections.includes(rm2.id)) rm.connections.push(rm2.id);
-      }
-    });
-  });
-
-  const startRoom = rooms.find(r=>r.type==='start') || rooms[0];
-  dungeonMap = { rooms, currentRoom: startRoom.id, visitedRooms: new Set([startRoom.id]), playerPos: {col:startRoom.col,row:startRoom.row} };
-  startRoom.cleared = true;
+  return M.map((row,i)=>row[n]/row[i]);
 }
 
-function drawDungeon() {
-  const W = dungeonCanvas.width, H = dungeonCanvas.height;
-  dCtx.clearRect(0,0,W,H);
-
-  // BG
-  dCtx.fillStyle = '#050a0f';
-  dCtx.fillRect(0,0,W,H);
-
-  // Grid dots
-  dCtx.fillStyle = 'rgba(26,58,92,0.3)';
-  for (let x=0;x<W;x+=16) for (let y=0;y<H;y+=16) { dCtx.fillRect(x,y,1,1); }
-
-  const tw = TILE*2, th = TILE*2;
-  const pad = 10;
-
-  // Draw connections first
-  dungeonMap.rooms.forEach(rm => {
-    rm.connections.forEach(cid => {
-      const rm2 = dungeonMap.rooms.find(r=>r.id===cid);
-      if (!rm2) return;
-      const x1 = rm.col*tw + tw/2, y1 = rm.row*th + th/2;
-      const x2 = rm2.col*tw + tw/2, y2 = rm2.row*th + th/2;
-      dCtx.strokeStyle = 'rgba(26,58,92,0.6)';
-      dCtx.lineWidth = 1.5;
-      dCtx.setLineDash([4,4]);
-      dCtx.beginPath(); dCtx.moveTo(x1,y1); dCtx.lineTo(x2,y2); dCtx.stroke();
-      dCtx.setLineDash([]);
-    });
-  });
-
-  // Draw rooms
-  dungeonMap.rooms.forEach(rm => {
-    const x = rm.col*tw + pad, y = rm.row*th + pad;
-    const w = tw - pad*2, h = th - pad*2;
-    const isCurrentRoom = rm.id === dungeonMap.currentRoom;
-    const isVisited = dungeonMap.visitedRooms.has(rm.id);
-    const isReachable = dungeonMap.rooms.find(r=>r.id===dungeonMap.currentRoom)?.connections.includes(rm.id);
-
-    let fillColor = '#0a1520';
-    let borderColor = '#1a3a5c';
-    let alpha = 0.4;
-
-    if (isCurrentRoom) { fillColor = '#0f2840'; borderColor = '#00d4ff'; alpha = 1; }
-    else if (rm.cleared) { fillColor = '#0a1a0a'; borderColor = '#1a5c1a'; alpha = 0.8; }
-    else if (isReachable) { fillColor = '#1a0f10'; borderColor = '#ff6b35'; alpha = 0.9; }
-    else if (isVisited) { alpha = 0.6; }
-
-    dCtx.globalAlpha = alpha;
-    dCtx.fillStyle = fillColor;
-    roundRect(dCtx, x, y, w, h, 4);
-    dCtx.fill();
-
-    dCtx.strokeStyle = borderColor;
-    dCtx.lineWidth = isCurrentRoom ? 2 : 0.5;
-    roundRect(dCtx, x, y, w, h, 4);
-    dCtx.stroke();
-    dCtx.globalAlpha = 1;
-
-    // Room icon
-    const ROOM_ICONS = { battle:'⚔️', treasure:'💎', shop:'🏪', rest:'🏕️', boss:'💀', start:'🏠' };
-    dCtx.font = `${isCurrentRoom?16:12}px serif`;
-    dCtx.textAlign = 'center';
-    dCtx.textBaseline = 'middle';
-    if (isVisited || isReachable || isCurrentRoom) {
-      dCtx.fillText(ROOM_ICONS[rm.type]||'?', x+w/2, y+h/2);
-    } else {
-      dCtx.fillStyle = 'rgba(90,138,176,0.3)';
-      dCtx.font = '10px Share Tech Mono';
-      dCtx.fillText('?', x+w/2, y+h/2);
+function solveSystem(){
+  const A=[],b=[];
+  for(let i=0;i<N;i++){
+    A.push([]);
+    for(let j=0;j<N;j++){
+      const v=parseFloat(document.getElementById(`a${i}${j}`).value)||0;
+      A[i].push(v);
     }
-
-    // Current player indicator
-    if (isCurrentRoom) {
-      dCtx.fillStyle = '#00d4ff';
-      dCtx.beginPath();
-      dCtx.arc(x+w/2, y+h-4, 3, 0, Math.PI*2);
-      dCtx.fill();
-    }
-  });
-
-  // Floor label
-  dCtx.globalAlpha = 0.5;
-  dCtx.fillStyle = '#5a8ab0';
-  dCtx.font = '10px Orbitron';
-  dCtx.textAlign = 'left';
-  dCtx.fillText(`ANDAR ${G.player?.floor||1}`, 8, 14);
-  dCtx.globalAlpha = 1;
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
-  ctx.arcTo(x+w,y,x+w,y+r,r); ctx.lineTo(x+w,y+h-r);
-  ctx.arcTo(x+w,y+h,x+w-r,y+h,r); ctx.lineTo(x+r,y+h);
-  ctx.arcTo(x,y+h,x,y+h-r,r); ctx.lineTo(x,y+r);
-  ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
-}
-
-// Click dungeon map to navigate
-dungeonCanvas.addEventListener('click', (e) => {
-  if (G.battleActive || G.choosingRoom) return;
-  const rect = dungeonCanvas.getBoundingClientRect();
-  const mx = (e.clientX-rect.left)*(dungeonCanvas.width/rect.width);
-  const my = (e.clientY-rect.top)*(dungeonCanvas.height/rect.height);
-  const tw = TILE*2, th = TILE*2;
-  const currentRoom = dungeonMap.rooms.find(r=>r.id===dungeonMap.currentRoom);
-
-  dungeonMap.rooms.forEach(rm => {
-    if (!currentRoom.connections.includes(rm.id)) return;
-    const x=rm.col*tw, y=rm.row*th;
-    if (mx>=x&&mx<=x+tw&&my>=y&&my<=y+th) {
-      enterRoom(rm);
-    }
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════
-//   CHALLENGE GENERATION
-// ═══════════════════════════════════════════════════════════════
-function rInt(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
-function rNonZero(min,max) { let v=0; while(v===0) v=rInt(min,max); return v; }
-
-function generateChallenge(type) {
-  switch(type) {
-    case 'linear2x2': return genLinear2x2();
-    case 'det2x2': return genDet2x2();
-    case 'dot3d': return genDot3D();
-    case 'matmul2x2': return genMatMul2x2();
-    case 'inverse2x2': return genInverse2x2();
-    case 'eigenvalue2x2': return genEigenvalue();
-    default: return genLinear2x2();
+    b.push(parseFloat(document.getElementById(`b${i}`).value)||0);
   }
-}
-
-function genLinear2x2() {
-  // Ax=b with integer solutions
-  let x, y, a, b, c, d;
-  do {
-    x = rInt(-5,5); y = rInt(-5,5);
-    a = rNonZero(-4,4); b = rInt(-4,4);
-    c = rInt(-4,4); d = rNonZero(-4,4);
-  } while (a*d - b*c === 0);
-
-  const e1 = a*x + b*y;
-  const e2 = c*x + d*y;
-
-  return {
-    type: 'linear2x2',
-    desc: `Resolva o sistema linear. Encontre os valores de x e y.`,
-    matrixDisplay: `${a}x + (${b})y = ${e1}\n${c}x + (${d})y = ${e2}`,
-    matrix: [[a,b],[c,d]],
-    rhs: [e1,e2],
-    answers: { x, y },
-    inputFields: ['x','y'],
-    hint: 'Use substituição ou eliminação de Gauss. Multiplique equações para eliminar uma variável.',
-    formula: 'Método de Gauss: [A|b] → escalonamento → back-substitution',
-  };
-}
-
-function genDet2x2() {
-  const a=rNonZero(-6,6), b=rInt(-6,6), c=rInt(-6,6), d=rNonZero(-6,6);
-  const det = a*d - b*c;
-  return {
-    type: 'det2x2',
-    desc: `Calcule o determinante da matriz A.`,
-    matrixDisplay: `A = ⎡ ${a}  ${b} ⎤\n    ⎣ ${c}  ${d} ⎦`,
-    matrix: [[a,b],[c,d]],
-    answers: { det },
-    inputFields: ['det'],
-    hint: 'det(A) = a×d − b×c para matriz 2×2.',
-    formula: 'det[[a,b],[c,d]] = ad - bc',
-  };
-}
-
-function genDot3D() {
-  const u = [rNonZero(-5,5), rNonZero(-5,5), rNonZero(-5,5)];
-  const v = [rNonZero(-5,5), rNonZero(-5,5), rNonZero(-5,5)];
-  const dot = u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
-  return {
-    type: 'dot3d',
-    desc: `Calcule o produto escalar u · v.`,
-    matrixDisplay: `u = [${u[0]}, ${u[1]}, ${u[2]}]\nv = [${v[0]}, ${v[1]}, ${v[2]}]`,
-    answers: { dot },
-    inputFields: ['dot'],
-    hint: 'u · v = u₁v₁ + u₂v₂ + u₃v₃',
-    formula: 'u · v = Σ uᵢvᵢ',
-  };
-}
-
-function genMatMul2x2() {
-  const A = [[rInt(-3,3),rInt(-3,3)],[rInt(-3,3),rInt(-3,3)]];
-  const B = [[rInt(-3,3),rInt(-3,3)],[rInt(-3,3),rInt(-3,3)]];
-  const C = [
-    [A[0][0]*B[0][0]+A[0][1]*B[1][0], A[0][0]*B[0][1]+A[0][1]*B[1][1]],
-    [A[1][0]*B[0][0]+A[1][1]*B[1][0], A[1][0]*B[0][1]+A[1][1]*B[1][1]]
-  ];
-  return {
-    type: 'matmul2x2',
-    desc: `Calcule C = A × B. Preencha a matriz resultado C.`,
-    matrixDisplay: `A = ⎡${A[0][0]} ${A[0][1]}⎤  B = ⎡${B[0][0]} ${B[0][1]}⎤\n    ⎣${A[1][0]} ${A[1][1]}⎦      ⎣${B[1][0]} ${B[1][1]}⎦`,
-    answers: { c00:C[0][0], c01:C[0][1], c10:C[1][0], c11:C[1][1] },
-    inputFields: ['c00','c01','c10','c11'],
-    grid: { rows:2, cols:2 },
-    hint: 'Cᵢⱼ = linha i de A · coluna j de B (produto escalar)',
-    formula: 'C[i][j] = Σₖ A[i][k] × B[k][j]',
-  };
-}
-
-function genInverse2x2() {
-  let a,b,c,d,det;
-  do { a=rNonZero(-4,4); b=rInt(-4,4); c=rInt(-4,4); d=rNonZero(-4,4); det=a*d-b*c; } while(det===0||det>6||det<-6);
-  // A⁻¹ = (1/det) * [[d,-b],[-c,a]] — only show when det=±1 for integer answers
-  // We'll use det=1 or det=-1 for clean answers
-  const sign = det > 0 ? 1 : -1;
-  // Rescale to make det=1: just force simple cases
-  // Actually let's give fractional answers as decimals (1 decimal)
-  const inv = [[d/det, -b/det],[-c/det, a/det]];
-  const r = v => Math.round(v*100)/100;
-  return {
-    type: 'inverse2x2',
-    desc: `Calcule a inversa de A: A⁻¹. (Use 2 casas decimais se necessário)`,
-    matrixDisplay: `A = ⎡ ${a}  ${b} ⎤\n    ⎣ ${c}  ${d} ⎦\ndet(A) = ${det}`,
-    answers: { i00:r(inv[0][0]), i01:r(inv[0][1]), i10:r(inv[1][0]), i11:r(inv[1][1]) },
-    inputFields: ['i00','i01','i10','i11'],
-    grid: { rows:2, cols:2 },
-    hint: 'A⁻¹ = (1/det(A)) × [[d, -b], [-c, a]]',
-    formula: 'A⁻¹ = (1/det) × adj(A)',
-    tolerance: 0.05,
-  };
-}
-
-function genEigenvalue() {
-  // A = [[a,b],[c,d]] with real eigenvalues
-  // char poly: λ² - tr(A)λ + det(A) = 0
-  // Pick eigenvalues λ1, λ2 → tr = λ1+λ2, det = λ1*λ2
-  const l1 = rNonZero(-5,5), l2 = rNonZero(-5,5);
-  const tr = l1+l2, det = l1*l2;
-  // Build a simple diagonal-ish matrix
-  const a = l1, b = rInt(0,2), c = 0, d = l2;
-  return {
-    type: 'eigenvalue2x2',
-    desc: `Encontre os autovalores (eigenvalues) de A.`,
-    matrixDisplay: `A = ⎡ ${a}  ${b} ⎤\n    ⎣ ${c}  ${d} ⎦`,
-    answers: { l1: Math.min(l1,l2), l2: Math.max(l1,l2) },
-    inputFields: ['l1','l2'],
-    hint: 'det(A − λI) = 0 → λ² − tr(A)λ + det(A) = 0. Resolva a equação quadrática.',
-    formula: 'λ = (tr ± √(tr²−4det)) / 2',
-    orderedPair: true,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   UI RENDERING
-// ═══════════════════════════════════════════════════════════════
-function renderChallenge(challenge) {
-  G.currentChallenge = challenge;
-
-  // Description
-  document.getElementById('challenge-description').innerHTML = challenge.desc;
-
-  // Matrix display
-  const disp = document.getElementById('matrix-problem-display');
-  disp.innerHTML = `<div class="matrix-display" style="white-space:pre;font-size:0.82rem">${challenge.matrixDisplay}</div>`;
-
-  // Answer area
-  const aa = document.getElementById('answer-area');
-  if (challenge.grid) {
-    const { rows, cols } = challenge.grid;
-    const labels = {
-      c00:'C[0][0]', c01:'C[0][1]', c10:'C[1][0]', c11:'C[1][1]',
-      i00:'A⁻¹[0][0]', i01:'A⁻¹[0][1]', i10:'A⁻¹[1][0]', i11:'A⁻¹[1][1]',
-    };
-    aa.innerHTML = `
-      <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text2);margin-bottom:0.3rem">Resultado (${rows}×${cols}):</div>
-      <div class="matrix-grid" style="grid-template-columns:repeat(${cols},48px)">
-        ${challenge.inputFields.map(f=>`<input type="number" class="matrix-cell" id="ans-${f}" step="0.01" placeholder="0">`).join('')}
-      </div>`;
-  } else if (challenge.inputFields.length === 1) {
-    const lbl = {det:'det(A)', dot:'u · v', l1:'λ₁', l2:'λ₂'}[challenge.inputFields[0]] || challenge.inputFields[0];
-    aa.innerHTML = `<div class="input-row">
-      <div class="input-label">${lbl} =</div>
-      <input type="number" class="matrix-input" id="ans-${challenge.inputFields[0]}" step="0.01" placeholder="Resposta" style="width:100px">
-    </div>`;
-  } else {
-    aa.innerHTML = challenge.inputFields.map(f => {
-      const lbl = {x:'x', y:'y', l1:'λ₁ (menor)', l2:'λ₂ (maior)'}[f] || f;
-      return `<div class="input-row">
-        <div class="input-label">${lbl} =</div>
-        <input type="number" class="matrix-input" id="ans-${f}" step="0.01" placeholder="0" style="width:90px">
-      </div>`;
-    }).join('');
-  }
-
-  // Hint
-  document.getElementById('hint-area').innerHTML = `
-    <div class="hint-box">
-      <div class="hint-title">💡 DICA</div>
-      <div class="hint-text">${challenge.hint}</div>
-      <div class="hint-formula">${challenge.formula}</div>
-    </div>`;
-
-  // Feedback clear
-  document.getElementById('feedback-area').innerHTML = '';
-
-  // Action buttons
-  document.getElementById('action-btns').innerHTML = `
-    <button class="btn-attack" id="btn-confirm" onclick="submitAnswer()"><span>⚔ ATACAR COM MATEMÁTICA</span></button>
-    <button class="btn-attack" id="btn-skip" onclick="skipChallenge()" style="border-color:var(--text2);color:var(--text2);margin-top:0.3rem;font-size:0.65rem"><span>↩ Pular (−10 HP)</span></button>`;
-
-  // Focus first input
-  setTimeout(() => { const fi = document.querySelector('.matrix-input, .matrix-cell'); if(fi) fi.focus(); }, 100);
-}
-
-function renderAbilities() {
-  const list = document.getElementById('abilities-list');
-  list.innerHTML = G.player.abilities.map(id => {
-    const ab = ABILITIES[id];
-    const canAfford = G.player.mp >= ab.cost;
-    const isSelected = G.player.selectedAbility === id;
-    return `<div class="ability-card ${isSelected?'selected':''} ${!canAfford?'disabled':''}" onclick="selectAbility('${id}')">
-      <div class="ability-header">
-        <div class="ability-name">${ab.icon} ${ab.name}</div>
-        <div class="ability-cost">${ab.cost}MP</div>
-      </div>
-      <div class="ability-desc">${ab.desc}</div>
-      <div class="ability-dmg">×${ab.dmgMult} dano</div>
-    </div>`;
-  }).join('');
-}
-
-function renderStats() {
-  const p = G.player;
-  document.getElementById('stats-display').innerHTML =
-    `ATK: ${p.atk}&nbsp;&nbsp; DEF: ${p.def}\nCRIT: ${Math.round(p.critChance*100)}%\nSTREAK: ${p.correctStreak}`;
-  document.getElementById('perks-display').innerHTML =
-    p.perks.length ? p.perks.map(pid => {
-      const pk = PERKS.find(p=>p.id===pid);
-      return pk ? `${pk.icon} ${pk.name}` : '';
-    }).join('<br>') : '<span style="opacity:0.4">Nenhuma passiva</span>';
-}
-
-function updateHUD() {
-  const p = G.player;
-  const set = (id,w) => { const el=document.getElementById(id); if(el) el.style.width=w+'%'; };
-  set('hud-hp', Math.max(0,(p.hp/p.maxHp)*100));
-  set('hud-mp', Math.max(0,(p.mp/p.maxMp)*100));
-  set('hud-xp', Math.max(0,(p.xp/p.xpNext)*100));
-  const sv = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  sv('hud-hp-val', `${p.hp}/${p.maxHp}`);
-  sv('hud-mp-val', `${p.mp}/${p.maxMp}`);
-  sv('hud-xp-val', `${p.xp}/${p.xpNext}`);
-  sv('hud-level', p.level);
-  sv('hud-floor', p.floor);
-  sv('hud-gold', p.gold);
-  document.getElementById('b-player-hp').textContent = `❤ ${p.hp}`;
-}
-
-function updateEnemyPanel() {
-  const e = G.currentEnemy;
-  if (!e) { document.getElementById('enemy-info-box').innerHTML = ''; return; }
-  const pct = Math.max(0,(e.hp/e.maxHp)*100);
-  document.getElementById('enemy-info-box').innerHTML = `
-    <div class="enemy-info">
-      <div class="enemy-icon">${e.icon}</div>
-      <div class="enemy-details">
-        <div class="enemy-name-tag">${e.name}</div>
-        <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text2)">${e.hp}/${e.maxHp} HP · ATK ${e.atk}</div>
-        <div class="enemy-hp-bar"><div class="enemy-hp-fill" style="width:${pct}%"></div></div>
-      </div>
-    </div>`;
-  document.getElementById('b-enemy-sprite').textContent = e.icon;
-  document.getElementById('b-enemy-name').textContent = e.name;
-  document.getElementById('b-enemy-hp').textContent = `❤ ${e.hp}`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   COMBAT LOG
-// ═══════════════════════════════════════════════════════════════
-function log(msg, type='') {
-  const el = document.createElement('div');
-  el.className = `log-entry ${type}`;
-  el.textContent = `> ${msg}`;
-  const log = document.getElementById('combat-log');
-  log.appendChild(el);
-  log.scrollTop = log.scrollHeight;
-  if (log.children.length > 80) log.removeChild(log.firstChild);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   ROOM LOGIC
-// ═══════════════════════════════════════════════════════════════
-function enterRoom(room) {
-  dungeonMap.currentRoom = room.id;
-  dungeonMap.visitedRooms.add(room.id);
-  G.choosingRoom = false;
-  drawDungeon();
-
-  const typeNames = { battle:'Sala de Batalha', treasure:'Tesouro', shop:'Loja', rest:'Descanso', boss:'Chefe!', start:'Início' };
-  document.getElementById('hud-room-type').textContent = typeNames[room.type] || room.type;
-  log(`Entrou na sala: ${typeNames[room.type]}`, 'system');
-
-  if (room.type === 'battle' || room.type === 'boss') {
-    startBattle(room);
-  } else if (room.type === 'treasure') {
-    treasureRoom(room);
-  } else if (room.type === 'rest') {
-    restRoom(room);
-  } else if (room.type === 'shop') {
-    shopRoom(room);
-  }
-}
-
-function startBattle(room) {
-  const isBoss = room.type === 'boss';
-  const pool = isBoss ? ENEMIES.filter(e=>e.type==='boss') : ENEMIES.filter(e=>e.type!=='boss');
-  const template = pool[Math.floor(Math.random()*pool.length)];
-  const lvl = G.player.level;
-  const scale = 1 + (lvl-1)*0.2 + (G.player.floor-1)*0.15;
-
-  G.currentEnemy = {
-    ...template,
-    hp: Math.round(template.hpBase * scale),
-    maxHp: Math.round(template.hpBase * scale),
-    atk: Math.round(template.atkBase * scale),
-    xp: Math.round(template.xp * scale),
-    gold: Math.round(template.gold * scale),
-  };
-
-  G.battleActive = true;
-  G.turn = 1;
-  document.getElementById('log-turn').textContent = `Turno ${G.turn}`;
-  document.getElementById('battle-overlay').classList.add('active');
-  updateEnemyPanel();
-  updateHUD();
-  log(`⚔ BATALHA: ${G.currentEnemy.name} apareceu!`, 'enemy');
-  log(`HP: ${G.currentEnemy.hp} | ATK: ${G.currentEnemy.atk}`, 'system');
-
-  // Start challenge
-  const ab = ABILITIES[G.player.selectedAbility];
-  const challenge = generateChallenge(ab.challenge);
-  renderChallenge(challenge);
-}
-
-function treasureRoom(room) {
-  if (room.cleared) { log('Sala já explorada.', 'system'); return; }
-  room.cleared = true;
-  const goldAmt = rInt(20,50) * (G.player.perks.includes('gold_boost') ? 1.5 : 1);
-  G.player.gold += Math.round(goldAmt);
-  log(`💎 Você encontrou ${Math.round(goldAmt)} de ouro!`, 'success');
-  // Also give a small ability unlock chance
-  const locked = Object.keys(ABILITIES).filter(k => !G.player.abilities.includes(k));
-  if (locked.length > 0 && Math.random() < 0.4) {
-    const newAb = locked[Math.floor(Math.random()*locked.length)];
-    G.player.abilities.push(newAb);
-    log(`✨ Nova habilidade desbloqueada: ${ABILITIES[newAb].name}!`, 'success');
-    renderAbilities();
-  }
-  updateHUD();
-  clearChallengePanel();
-}
-
-function restRoom(room) {
-  if (room.cleared) { log('Sala já descansada.', 'system'); return; }
-  room.cleared = true;
-  const heal = Math.round(G.player.maxHp * 0.35);
-  const mpHeal = Math.round(G.player.maxMp * 0.5);
-  G.player.hp = Math.min(G.player.maxHp, G.player.hp + heal);
-  G.player.mp = Math.min(G.player.maxMp, G.player.mp + mpHeal);
-  log(`🏕️ Você descansou! +${heal} HP, +${mpHeal} MP`, 'success');
-  updateHUD();
-  clearChallengePanel('Sala de Descanso — HP e MP restaurados parcialmente. Avance para a próxima sala.');
-}
-
-function shopRoom(room) {
-  if (room.cleared) { log('Loja já visitada.', 'system'); return; }
-  room.cleared = true;
-  log('🏪 Loja: habilidades desbloqueadas automaticamente pela visita!', 'success');
-  const locked = Object.keys(ABILITIES).filter(k => !G.player.abilities.includes(k));
-  if (locked.length > 0) {
-    const newAb = locked[Math.floor(Math.random()*locked.length)];
-    G.player.abilities.push(newAb);
-    log(`✨ Comprou: ${ABILITIES[newAb].name}!`, 'success');
-    renderAbilities();
-  }
-  clearChallengePanel('Loja — Nova habilidade adquirida! Escolha sua próxima sala.');
-}
-
-function clearChallengePanel(msg) {
-  ['challenge-description','matrix-problem-display','answer-area','feedback-area','hint-area','action-btns','enemy-info-box']
-    .forEach(id => { document.getElementById(id).innerHTML = ''; });
-  if (msg) document.getElementById('challenge-description').textContent = msg;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   ANSWER CHECKING
-// ═══════════════════════════════════════════════════════════════
-function submitAnswer() {
-  if (!G.currentChallenge || !G.battleActive) return;
-  const ch = G.currentChallenge;
-  const tol = ch.tolerance || 0.51;
-  let allCorrect = true;
-
-  for (const field of ch.inputFields) {
-    const el = document.getElementById(`ans-${field}`);
-    if (!el) { allCorrect = false; break; }
-    const val = parseFloat(el.value);
-    const expected = ch.answers[field];
-    if (isNaN(val) || Math.abs(val - expected) > tol) {
-      allCorrect = false; break;
-    }
-  }
-
-  if (allCorrect) {
-    onCorrectAnswer();
-  } else {
-    onWrongAnswer();
-  }
-}
-
-function onCorrectAnswer() {
-  const p = G.player;
-  const ab = ABILITIES[p.selectedAbility];
-  const ch = G.currentChallenge;
-
-  // Cost MP
-  p.mp = Math.max(0, p.mp - ab.cost);
-
-  // Calc damage
-  let dmg = Math.round(p.atk * ab.dmgMult * (0.9 + Math.random()*0.2));
-  const isCrit = Math.random() < p.critChance;
-  if (isCrit) dmg = Math.round(dmg * 1.8);
-
-  // Streak
-  p.correctStreak++;
-  if (p.perks.includes('streak_bonus') && p.correctStreak > 2) dmg = Math.round(dmg * (1 + p.correctStreak*0.1));
-
-  // HP leech
-  if (p.perks.includes('hp_leech')) p.hp = Math.min(p.maxHp, p.hp+5);
-  if (p.perks.includes('mp_regen')) p.mp = Math.min(p.maxMp, p.mp+5);
-
-  p.totalCorrect++;
-  G.currentEnemy.hp -= dmg;
-
-  const critMsg = isCrit ? ' 💥 CRÍTICO!' : '';
-  log(`✅ Correto! ${ab.icon} ${ab.name} causou ${dmg} dano!${critMsg}`, 'player');
-
-  // Floating damage
-  spawnFloatDmg(dmg, isCrit ? '#ffd700' : '#00ff88', isCrit ? 'CRÍTICO! '+dmg : dmg.toString());
-
-  // Shake enemy
-  document.getElementById('b-enemy-sprite').classList.add('shake');
-  setTimeout(() => document.getElementById('b-enemy-sprite').classList.remove('shake'), 500);
-
-  document.getElementById('feedback-area').innerHTML = `<div class="feedback-banner correct">✓ ${isCrit?'CRÍTICO! ':''}${dmg} de dano causado!</div>`;
-
-  updateEnemyPanel();
-  updateHUD();
-  renderStats();
-
-  if (G.currentEnemy.hp <= 0) {
-    endBattle(true);
+  const x=gaussianElimination(A,b);
+  const box=document.getElementById('solution-box');
+  const vec=document.getElementById('sol-vec');
+  box.classList.add('visible');
+  if(!x){
+    vec.innerHTML='<span class="sol-err">Sistema sem solução única (matriz singular)</span>';
     return;
   }
-
-  // Enemy counter-attack
-  setTimeout(() => enemyAttack(), 800);
+  vec.innerHTML=x.map((v,i)=>
+    `<div class="sol-cell">x${toSub(i)} = ${v.toLocaleString('pt-BR',{maximumFractionDigits:2})}</div>`
+  ).join('');
 }
 
-function onWrongAnswer() {
-  G.player.correctStreak = 0;
-  G.player.totalWrong++;
-
-  // Show correct answers
-  const ch = G.currentChallenge;
-  const correctStr = ch.inputFields.map(f => `${f}=${ch.answers[f]}`).join(', ');
-  log(`❌ Resposta errada! Correto: ${correctStr}`, 'error');
-
-  document.getElementById('feedback-area').innerHTML = `<div class="feedback-banner wrong">✗ Errado! Resposta: ${correctStr}</div>`;
-
-  // Shake player
-  document.getElementById('b-player-sprite').classList.add('shake');
-  setTimeout(() => document.getElementById('b-player-sprite').classList.remove('shake'), 500);
-
-  // Enemy attacks when player gets it wrong
-  setTimeout(() => enemyAttack(true), 600);
-  renderStats();
-}
-
-function skipChallenge() {
-  G.player.hp = Math.max(1, G.player.hp - 10);
-  G.player.correctStreak = 0;
-  log('↩ Pulou o desafio. −10 HP.', 'system');
-  updateHUD();
-  const ab = ABILITIES[G.player.selectedAbility];
-  const ch = generateChallenge(ab.challenge);
-  renderChallenge(ch);
-}
-
-function enemyAttack(extraDmg = false) {
-  const e = G.currentEnemy;
-  const p = G.player;
-  let dmg = Math.max(1, Math.round(e.atk * (0.8 + Math.random()*0.4)) - p.def);
-  if (extraDmg) dmg = Math.round(dmg * 1.3);
-
-  p.hp = Math.max(0, p.hp - dmg);
-  log(`${e.icon} ${e.name} atacou por ${dmg} dano!`, 'enemy');
-  spawnFloatDmg(dmg, '#ff4444', '-'+dmg);
-
-  updateHUD();
-  G.turn++;
-  document.getElementById('log-turn').textContent = `Turno ${G.turn}`;
-
-  if (p.hp <= 0) { endBattle(false); return; }
-
-  // MP regen per turn
-  if (!extraDmg) p.mp = Math.min(p.maxMp, p.mp + 3);
-
-  // Next challenge
-  const ab = ABILITIES[p.selectedAbility];
-  const ch = generateChallenge(ab.challenge);
-  renderChallenge(ch);
-  updateHUD();
-}
-
-function spawnFloatDmg(val, color, text) {
-  const center = document.querySelector('.panel-center');
-  if (!center) return;
-  const el = document.createElement('div');
-  el.className = 'float-dmg';
-  el.style.color = color;
-  el.style.left = (40 + Math.random()*60) + '%';
-  el.style.top = (30 + Math.random()*30) + '%';
-  el.textContent = text;
-  center.appendChild(el);
-  setTimeout(() => el.remove(), 1300);
-}
-
-function endBattle(victory) {
-  G.battleActive = false;
-  document.getElementById('battle-overlay').classList.remove('active');
-
-  const room = dungeonMap.rooms.find(r=>r.id===dungeonMap.currentRoom);
-  if (room) room.cleared = true;
-  drawDungeon();
-
-  if (victory) {
-    const e = G.currentEnemy;
-    const xpMult = G.player.perks.includes('xp_boost') ? 1.3 : 1;
-    const goldMult = G.player.perks.includes('gold_boost') ? 1.5 : 1;
-    const xpGain = Math.round(e.xp * xpMult);
-    const goldGain = Math.round(e.gold * goldMult);
-    G.player.xp += xpGain;
-    G.player.gold += goldGain;
-    G.player.enemiesDefeated++;
-    log(`🏆 ${e.name} derrotado! +${xpGain} XP, +${goldGain} ouro`, 'success');
-
-    // Check level up
-    if (G.player.xp >= G.player.xpNext) levelUp();
-    else { clearChallengePanel('Inimigo derrotado! Escolha a próxima sala no mapa.'); updateHUD(); }
-
-    // Check floor clear (boss defeated)
-    if (room?.type === 'boss') nextFloor();
-  } else {
-    gameOver();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   LEVEL UP
-// ═══════════════════════════════════════════════════════════════
-function levelUp() {
-  const p = G.player;
-  p.level++;
-  p.xp -= p.xpNext;
-  p.xpNext = Math.round(p.xpNext * 1.5);
-  p.maxHp += 20; p.hp = p.maxHp;
-  p.maxMp += 10; p.mp = p.maxMp;
-  p.atk += 5;
-  log(`⭐ LEVEL UP! Agora nível ${p.level}!`, 'success');
-  document.getElementById('player-class').textContent = `Mago Matricial · Nv.${p.level}`;
-  updateHUD();
-  renderStats();
-  showLevelUpScreen();
-}
-
-function showLevelUpScreen() {
-  const available = PERKS.filter(p => !G.player.perks.includes(p.id));
-  const picks = shuffle(available).slice(0,3);
-  const cards = picks.map(p => `
-    <div class="perk-card" onclick="choosePerk('${p.id}')">
-      <div class="pi">${p.icon}</div>
-      <div class="pn">${p.name}</div>
-      <div class="pd">${p.desc}</div>
-    </div>`).join('');
-  document.getElementById('perk-cards').innerHTML = cards || `<div class="perk-card" onclick="choosePerk(null)"><div class="pi">💪</div><div class="pn">Pura Força</div><div class="pd">+30 ATK</div></div>`;
-  document.getElementById('levelup-overlay').classList.add('active');
-}
-
-function choosePerk(id) {
-  document.getElementById('levelup-overlay').classList.remove('active');
-  if (id) {
-    G.player.perks.push(id);
-    const p = PERKS.find(p=>p.id===id);
-    log(`✨ Passiva adquirida: ${p?.name}`, 'success');
-    applyPerkEffect(id);
-  } else {
-    G.player.atk += 30;
-  }
-  renderStats();
-  renderAbilities();
-  clearChallengePanel('Level Up! Escolha a próxima sala no mapa.');
-  updateHUD();
-}
-
-function applyPerkEffect(id) {
-  const p = G.player;
-  if (id==='crit_boost') p.critChance += 0.15;
-  if (id==='def_boost') p.def += 10;
-  if (id==='dmg_boost') p.atk = Math.round(p.atk * 1.25);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   FLOOR / GAME OVER
-// ═══════════════════════════════════════════════════════════════
-function nextFloor() {
-  G.player.floor++;
-  G.player.hp = Math.min(G.player.maxHp, G.player.hp + Math.round(G.player.maxHp * 0.3));
-  G.player.mp = G.player.maxMp;
-  log(`🌟 ANDAR ${G.player.floor} começou! Parcial HP restaurado.`, 'success');
-  generateFloor();
-  drawDungeon();
-  updateHUD();
-  clearChallengePanel(`Andar ${G.player.floor} iniciado! Explore as salas do mapa.`);
-}
-
-function gameOver() {
-  const p = G.player;
-  document.getElementById('gameover-stats').innerHTML =
-    `Nível atingido: ${p.level}\nAndar: ${p.floor}\nInimigos derrotados: ${p.enemiesDefeated}\nRespostas corretas: ${p.totalCorrect}\nRespostas erradas: ${p.totalWrong}\nOuro acumulado: ${p.gold}`;
-  document.getElementById('gameover-overlay').classList.add('active');
-}
-
-function restartGame() {
-  document.getElementById('gameover-overlay').classList.remove('active');
-  document.getElementById('combat-log').innerHTML = '';
-  startGame();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   ABILITY SELECTION
-// ═══════════════════════════════════════════════════════════════
-function selectAbility(id) {
-  const ab = ABILITIES[id];
-  if (G.player.mp < ab.cost) { log('MP insuficiente!', 'error'); return; }
-  G.player.selectedAbility = id;
-  renderAbilities();
-  if (G.battleActive) {
-    const ch = generateChallenge(ab.challenge);
-    renderChallenge(ch);
-    log(`Trocou para: ${ab.icon} ${ab.name}`, 'system');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//   GAME START
-// ═══════════════════════════════════════════════════════════════
-function startGame() {
-  G = { player: createPlayer(), battleActive: false, currentEnemy: null, currentChallenge: null, turn: 1, choosingRoom: false };
-  document.getElementById('title-screen').classList.remove('active');
-  document.getElementById('game-screen').classList.add('active');
-
-  generateFloor();
-  drawDungeon();
-  renderAbilities();
-  renderStats();
-  updateHUD();
-
-  // Initial log
-  log('═══ MATRIXROGUE INICIADO ═══', 'system');
-  log('Clique nas salas adjacentes para navegar.', 'system');
-  log('Use suas habilidades matemáticas para vencer!', 'system');
-  log('Salas laranja são acessíveis. Comece pela batalha!', 'system');
-
-  clearChallengePanel('Bem-vindo, Algebrista! Clique em uma sala no mapa para começar sua jornada.');
-
-  // Resize dungeon canvas to fit
-  resizeDungeon();
-}
-
-function resizeDungeon() {
-  const container = document.querySelector('.panel-center');
-  if (!container) return;
-  const cw = container.clientWidth, ch = container.clientHeight;
-  const dw = dungeonCanvas.width, dh = dungeonCanvas.height;
-  const scale = Math.min(cw/dw, ch/dh, 1);
-  dungeonCanvas.style.width = (dw*scale)+'px';
-  dungeonCanvas.style.height = (dh*scale)+'px';
-}
-
-window.addEventListener('resize', () => { resizeDungeon(); drawDungeon(); });
-
-// ═══════════════════════════════════════════════════════════════
-//   UTILS
-// ═══════════════════════════════════════════════════════════════
-function shuffle(arr) { return [...arr].sort(() => Math.random()-0.5); }
-
-// Keyboard enter to submit
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && G.battleActive) submitAnswer();
+// inicia matriz ao carregar
+document.addEventListener('DOMContentLoaded',()=>{
+  // Pre-render para quando acessar modelo
 });
-
-// INIT
-initRain();
 </script>
 </body>
 </html>
