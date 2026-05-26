@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>FinMatrix</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style/style.css">
+        <link rel="shortcut icon" href="imgs/Fm-icon.png" type="image/x-icon">
+    </head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div class="page active" id="page-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">FM</div>
+      <div class="login-logo-name">Fin<span>Matrix</span></div>
+    </div>
+    <div class="login-title">Bem-vindo de volta</div>
+    <div class="login-sub">Entre com suas credenciais para continuar</div>
+    <div class="login-error" id="login-error">E-mail ou senha incorretos.</div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="inp-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="inp-senha" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div class="login-footer">
+      Não tem conta? <a onclick="doLogin()">Cadastre-se grátis</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div class="page" id="page-app">
+
+  <!-- SIDEBAR - Barra lateral -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">FM</div>
+      <div class="sidebar-logo-name">Fin<span>Matrix</span></div>
+    </div>
+
+    <div class="sidebar-section">Principal</div>
+    <div class="nav-item active" onclick="showNav('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="showNav('metas',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Metas
+    </div>
+    <div class="nav-item" onclick="showNav('modelo',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16M9 2v20M15 2v20"/></svg>
+      Modelo Matemático
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <div class="user-avatar"></div>
+        <div>
+          <div class="user-name"></div>
+          <div class="user-role">Plano Pro</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">← Sair da conta</button>
+    </div>
+  </nav>
+
+  <!-- MAIN - itens principais -->
+  <main class="main">
+
+    <!-- topbar -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub">Visão geral · Julho 2025</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀ Modo claro</button>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div id="nav-dashboard" class="nav-panel">
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title">Saldo consolidado</div>
+          <div class="card-value">R$48.320</div>
+          <div class="card-sub positive">↑ 12,4% este mês</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Receitas</div>
+          <div class="card-value">R$9.700</div>
+          <div class="card-sub positive">↑ +R$1.200 vs mês ant.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Despesas</div>
+          <div class="card-value">R$7.450</div>
+          <div class="card-sub negative">↑ +R$320 vs mês ant.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Cumprimento de metas</div>
+          <div class="card-value">87%</div>
+          <div class="card-sub neutral">→ R$1.2k restam</div>
+        </div>
+      </div>
+
+      <!-- status modelo 1 -->
+      <div class="card" style="margin-bottom:1.5rem;border-color:rgba(34,160,0,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <div>
+            <div class="card-title">Status do modelo matricial</div>
+            <div style="font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:.3rem">
+              Sistema Ax = b processado <span class="badge badge-green" style="margin-left:.5rem">✓ Ok</span>
+            </div>
+            <div style="font-size:.85rem;color:var(--text2)">3 variáveis fora do equilíbrio · Meta atingível em 47 dias</div>
+          </div>
+          <button class="btn-solve" style="margin-top:0" onclick="showNav('modelo',document.querySelectorAll('.nav-item')[3])">Ver modelo →</button>
+        </div>
+      </div>
+      
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">Distribuição de gastos</div>
+          <div class="chart-bars">
+            <div class="bar" style="height:58%"><span class="bar-lbl">Moradia</span></div>
+            <div class="bar" style="height:32%"><span class="bar-lbl">Alimentação</span></div>
+            <div class="bar hi" style="height:78%"><span class="bar-lbl">Transporte</span></div>
+            <div class="bar" style="height:45%"><span class="bar-lbl">Lazer</span></div>
+            <div class="bar" style="height:20%"><span class="bar-lbl">Saúde</span></div>
+            <div class="bar" style="height:28%"><span class="bar-lbl">Educação</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">Últimas transações</div>
+          <div class="tx-row">
+            <div><div class="tx-name">Salário</div><div class="tx-cat">Receita</div></div>
+            <div class="tx-val" style="color:#4caf7d">+R$8.500</div>
+          </div>
+          <div class="tx-row">
+            <div><div class="tx-name">Supermercado</div><div class="tx-cat">Alimentação</div></div>
+            <div class="tx-val" style="color:#e07070">-R$320</div>
+          </div>
+          <div class="tx-row">
+            <div><div class="tx-name">Freelance</div><div class="tx-cat">Receita extra</div></div>
+            <div class="tx-val" style="color:#4caf7d">+R$1.200</div>
+          </div>
+          <div class="tx-row">
+            <div><div class="tx-name">Conta de luz</div><div class="tx-cat">Utilidades</div></div>
+            <div class="tx-val" style="color:#e07070">-R$180</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── METAS ── -->
+    <div id="nav-metas" class="nav-panel" style="display:none">
+      <div style="text-align: center; width: 100%;">⚠️ Em desenvolvimento ⚠️</div>
+    </div>
+
+    <!-- ── MODELO MATEMÁTICO ── -->
+    <div id="nav-modelo" class="nav-panel" style="display:none">
+
+      <div class="card" style="margin-bottom:1.5rem;border-color:rgba(34,160,0,.3)">
+        <div style="font-size:.85rem;color:var(--text2);line-height:1.7">
+          Edite a matriz <strong style="color:var(--accent-ll);font-family:var(--mono)">A</strong> e o vetor 
+          <strong style="color:var(--accent-ll);font-family:var(--mono)">b</strong> abaixo. O sistema resolve 
+          <strong style="color:var(--accent-ll);font-family:var(--mono)">Ax = b</strong> usando eliminação gaussiana e exibe o vetor solução 
+          <strong style="color:var(--accent-ll);font-family:var(--mono)">x</strong>.
+        </div>
+      </div>
+
+      <!-- controle de tamanho -->
+      <div class="matrix-section">
+        <div class="matrix-label">Tamanho da matriz</div>
+        <div class="matrix-size-ctrl">
+          <label>Linhas / colunas:</label>
+          <button class="size-btn" onclick="changeSize(-1)">−</button>
+          <span class="size-display" id="size-display">3</span>
+          <button class="size-btn" onclick="changeSize(1)">+</button>
+          <span style="font-size:.8rem;color:var(--text3);font-family:var(--mono)">(máx. 5×5)</span>
+        </div>
+
+        <div class="matrix-eq" id="matrix-eq-display">
+          <!-- renderizado por JS -->
+        </div>
+
+        <button class="btn-solve" onclick="solveSystem()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Resolver Ax = b
+        </button>
+
+        <div class="solution-box" id="solution-box">
+          <div class="sol-label">Vetor solução x =</div>
+          <div class="sol-vec" id="sol-vec"></div>
+        </div>
+      </div>
+
+      <!-- interpretação -->
+      <div class="matrix-section">
+        <div class="matrix-label">Interpretação financeira</div>
+        <div style="font-size:.88rem;color:var(--text2);line-height:1.8">
+          No contexto do FinMatrix, cada linha da matriz <span style="font-family:var(--mono);color:var(--accent-ll)">A</span> representa a relação entre categorias de gastos. O vetor <span style="font-family:var(--mono);color:var(--accent-ll)">b</span> são suas metas mensais em reais. O vetor solução <span style="font-family:var(--mono);color:var(--accent-ll)">x</span> indica o valor ideal que cada categoria deve ter para equilibrar o orçamento simultaneamente.
+        </div>
+        <div style="margin-top:1rem;padding:1rem;background:var(--bg2);border-radius:8px;font-family:var(--mono);font-size:.8rem;color:var(--text2);line-height:1.9">
+          Exemplo: linha 1 → [1, 0.3, 0.1] significa que moradia depende 30% de alimentação e 10% de lazer<br>
+          b[0] = 3500 → meta de moradia: R$3.500/mês<br>
+          x[0] = ? → valor ideal resolvido automaticamente
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
+
+<script src="script/script.js"></script>
